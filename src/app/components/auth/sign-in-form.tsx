@@ -27,7 +27,7 @@ export const SignInForm = ({ onToggle }: { onToggle: () => void }) => {
       return 'Success';
     },
     onSuccess: () => {
-      router.push('/');
+      router.push('/dashboard');
       router.refresh();
     },
   });
