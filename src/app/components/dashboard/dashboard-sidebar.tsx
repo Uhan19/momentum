@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Home, User } from 'lucide-react';
 
 const navigation = [
@@ -56,8 +56,7 @@ export function DashboardSidebar({
       <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-64 lg:flex-col">
         <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r bg-background px-6">
           <div className="flex h-16 shrink-0 items-center">
-            {/* Add your logo here */}
-            <span className="text-lg font-semibold">Your Logo</span>
+            <span className="text-lg font-semibold">Momentum</span>
           </div>
           <SidebarContent />
         </div>

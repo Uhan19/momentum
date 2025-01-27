@@ -28,6 +28,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { CreateExerciseTemplateDialog } from '../exercise-templates/create-exercise-template-dialog';
+import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
 type ExerciseGroup = {
   id: string;
@@ -36,11 +38,20 @@ type ExerciseGroup = {
   created_at: string;
 };
 
+type ExerciseTemplate = {
+  id: string;
+  title: string;
+  notes: string | null;
+  created_at: string;
+};
+
 export function ExerciseGroupsList() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [groupToDelete, setGroupToDelete] = useState<ExerciseGroup | null>(null);
   const { supabase } = useSupabase();
   const queryClient = useQueryClient();
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+  const [showCreateTemplateDialog, setShowCreateTemplateDialog] = useState(false);
 
   const { data: exerciseGroups, isLoading } = useQuery({
     queryKey: ['exerciseGroups'],
@@ -53,6 +64,22 @@ export function ExerciseGroupsList() {
       if (error) throw error;
       return data as ExerciseGroup[];
     },
+  });
+
+  const { data: exerciseTemplates } = useQuery({
+    queryKey: ['exerciseTemplates', selectedGroupId],
+    queryFn: async () => {
+      if (!selectedGroupId) return [];
+      const { data, error } = await supabase
+        .from('exercise_templates')
+        .select('*')
+        .eq('group_id', selectedGroupId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data as ExerciseTemplate[];
+    },
+    enabled: !!selectedGroupId,
   });
 
   const handleDelete = async () => {
@@ -83,7 +110,14 @@ export function ExerciseGroupsList() {
       {isLoading ? (
         <div>Loading...</div>
       ) : (
-        <Accordion type="multiple" className="w-full space-y-4">
+        <Accordion
+          type="multiple"
+          className="w-full space-y-4"
+          onValueChange={(values) => {
+            const lastValue = values[values.length - 1];
+            setSelectedGroupId(lastValue || null);
+          }}
+        >
           {exerciseGroups?.map((group) => (
             <AccordionItem key={group.id} value={group.id} className="border rounded-lg">
               <div className="flex items-center justify-between">
@@ -113,9 +147,34 @@ export function ExerciseGroupsList() {
                 </DropdownMenu>
               </div>
               <AccordionContent className="px-4">
-                {/* Exercise templates will go here */}
                 <div className="py-4">
-                  <div className="text-sm text-muted-foreground">No exercises yet</div>
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-sm font-medium">Exercise Templates</h3>
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        setSelectedGroupId(group.id);
+                        setShowCreateTemplateDialog(true);
+                      }}
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add Template
+                    </Button>
+                  </div>
+
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {exerciseTemplates?.map((template) => (
+                      <Card key={template.id}>
+                        <CardHeader>
+                          <CardTitle className="text-base">{template.title}</CardTitle>
+                          {template.notes && <CardDescription>{template.notes}</CardDescription>}
+                        </CardHeader>
+                      </Card>
+                    ))}
+                    {exerciseTemplates?.length === 0 && (
+                      <div className="text-sm text-muted-foreground">No templates yet</div>
+                    )}
+                  </div>
                 </div>
               </AccordionContent>
             </AccordionItem>
@@ -145,6 +204,14 @@ export function ExerciseGroupsList() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {selectedGroupId && (
+        <CreateExerciseTemplateDialog
+          open={showCreateTemplateDialog}
+          onOpenChange={setShowCreateTemplateDialog}
+          groupId={selectedGroupId}
+        />
+      )}
     </div>
   );
 }
