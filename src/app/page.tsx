@@ -1,6 +1,5 @@
 import { Header } from './components/header/header';
 import { StartWorkout } from './components/workout/start-workout';
-import { WorkoutCard } from './components/workout/workout-card';
 
 export default function Home() {
   return (
