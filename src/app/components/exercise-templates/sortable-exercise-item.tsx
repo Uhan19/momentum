@@ -1,8 +1,9 @@
-'use client';
+'use client'
+import { useState } from 'react'
 
-import { Button } from '@/components/ui/button';
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button'
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
+import { Input } from '@/components/ui/input'
 import {
   Select,
   SelectContent,
@@ -11,32 +12,30 @@ import {
   SelectValue,
   SelectGroup,
   SelectLabel,
-} from '@/components/ui/select';
-import { useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, X, Check, ChevronsUpDown } from 'lucide-react';
-import { useState } from 'react';
-import { cn } from '@/lib/utils';
-import { UseFormReturn } from 'react-hook-form';
+} from '@/components/ui/select'
+import { useSortable } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import { GripVertical, X, Check, ChevronsUpDown } from 'lucide-react'
+import { UseFormReturn } from 'react-hook-form'
 
 type FormValues = {
-  title: string;
-  notes?: string;
+  title: string
+  notes?: string
   exercises: Array<{
-    exercise_id: string;
-    sets: number;
-    reps: number;
-    weight_type: 'kg' | 'lbs';
-    order_index: number;
-  }>;
-};
+    exercise_id: string
+    sets: number
+    reps: number
+    weight_type: 'kg' | 'lbs'
+    order_index: number
+  }>
+}
 
 interface SortableExerciseItemProps {
-  id: string;
-  index: number;
-  exercises: Array<{ id: string; name: string }>;
-  remove: (index: number) => void;
-  form: UseFormReturn<FormValues>;
+  id: string
+  index: number
+  exercises: Array<{ id: string; name: string }>
+  remove: (index: number) => void
+  form: UseFormReturn<FormValues>
 }
 
 export function SortableExerciseItem({
@@ -46,25 +45,25 @@ export function SortableExerciseItem({
   remove,
   form,
 }: SortableExerciseItemProps) {
-  const [customExercise, setCustomExercise] = useState('');
-  const exerciseValue = form.watch(`exercises.${index}.exercise_id`);
-  const selectedExercise = exercises.find((ex) => ex.id === exerciseValue)?.name || customExercise;
+  const [customExercise, setCustomExercise] = useState('')
+  const exerciseValue = form.watch(`exercises.${index}.exercise_id`)
+  const selectedExercise = exercises.find((ex) => ex.id === exerciseValue)?.name || customExercise
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id,
-  });
+  })
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     zIndex: isDragging ? 1 : 0,
     opacity: isDragging ? 0.5 : 1,
-  };
+  }
 
-  console.log('selectedExercise', exerciseValue);
-  console.log('exercises', exercises);
-  console.log('form', form);
-  console.log('index', index);
+  console.log('selectedExercise', exerciseValue)
+  console.log('exercises', exercises)
+  console.log('form', form)
+  console.log('index', index)
 
   return (
     <div
@@ -94,10 +93,10 @@ export function SortableExerciseItem({
             <Select
               onValueChange={(value) => {
                 if (value === '_custom') {
-                  field.onChange(customExercise);
+                  field.onChange(customExercise)
                 } else {
-                  field.onChange(value);
-                  setCustomExercise('');
+                  field.onChange(value)
+                  setCustomExercise('')
                 }
               }}
               value={field.value}
@@ -115,12 +114,12 @@ export function SortableExerciseItem({
                     placeholder="Add custom exercise"
                     value={customExercise}
                     onChange={(e) => {
-                      e.stopPropagation();
-                      setCustomExercise(e.target.value);
+                      e.stopPropagation()
+                      setCustomExercise(e.target.value)
                     }}
                     onBlur={(e) => {
                       if (customExercise) {
-                        field.onChange(customExercise);
+                        field.onChange(customExercise)
                       }
                     }}
                     onClick={(e) => e.stopPropagation()}
@@ -205,5 +204,5 @@ export function SortableExerciseItem({
         <X className="h-4 w-4" />
       </Button>
     </div>
-  );
+  )
 }

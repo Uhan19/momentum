@@ -1,23 +1,23 @@
-'use client';
+'use client'
 
-import { Button } from '@/components/ui/button';
-import { Plus, MoreVertical, Trash } from 'lucide-react';
-import { useState } from 'react';
-import { CreateExerciseGroupDialog } from './create-exercise-group-dialog';
-import { useSupabase } from '@/providers/supabase-provider';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Button } from '@/components/ui/button'
+import { Plus, MoreVertical, Trash } from 'lucide-react'
+import { useState } from 'react'
+import { CreateExerciseGroupDialog } from './create-exercise-group-dialog'
+import { useSupabase } from '@/providers/supabase-provider'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from '@/components/ui/accordion';
+} from '@/components/ui/accordion'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from '@/components/ui/dropdown-menu'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,31 +27,31 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { CreateExerciseTemplateDialog } from '../exercise-templates/create-exercise-template-dialog';
-import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+} from '@/components/ui/alert-dialog'
+import { CreateExerciseTemplateDialog } from '../exercise-templates/create-exercise-template-dialog'
+import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 
 type ExerciseGroup = {
-  id: string;
-  name: string;
-  description: string | null;
-  created_at: string;
-};
+  id: string
+  name: string
+  description: string | null
+  created_at: string
+}
 
 type ExerciseTemplate = {
-  id: string;
-  title: string;
-  notes: string | null;
-  created_at: string;
-};
+  id: string
+  title: string
+  notes: string | null
+  created_at: string
+}
 
 export function ExerciseGroupsList() {
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [groupToDelete, setGroupToDelete] = useState<ExerciseGroup | null>(null);
-  const { supabase } = useSupabase();
-  const queryClient = useQueryClient();
-  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
-  const [showCreateTemplateDialog, setShowCreateTemplateDialog] = useState(false);
+  const [showCreateDialog, setShowCreateDialog] = useState(false)
+  const [groupToDelete, setGroupToDelete] = useState<ExerciseGroup | null>(null)
+  const { supabase } = useSupabase()
+  const queryClient = useQueryClient()
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
+  const [showCreateTemplateDialog, setShowCreateTemplateDialog] = useState(false)
 
   const { data: exerciseGroups, isLoading } = useQuery({
     queryKey: ['exerciseGroups'],
@@ -59,43 +59,43 @@ export function ExerciseGroupsList() {
       const { data, error } = await supabase
         .from('exercise_groups')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
 
-      if (error) throw error;
-      return data as ExerciseGroup[];
+      if (error) throw error
+      return data as ExerciseGroup[]
     },
-  });
+  })
 
   const { data: exerciseTemplates } = useQuery({
     queryKey: ['exerciseTemplates', selectedGroupId],
     queryFn: async () => {
-      if (!selectedGroupId) return [];
+      if (!selectedGroupId) return []
       const { data, error } = await supabase
         .from('exercise_templates')
         .select('*')
         .eq('group_id', selectedGroupId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
 
-      if (error) throw error;
-      return data as ExerciseTemplate[];
+      if (error) throw error
+      return data as ExerciseTemplate[]
     },
     enabled: !!selectedGroupId,
-  });
+  })
 
   const handleDelete = async () => {
-    if (!groupToDelete) return;
+    if (!groupToDelete) return
 
     try {
-      const { error } = await supabase.from('exercise_groups').delete().eq('id', groupToDelete.id);
+      const { error } = await supabase.from('exercise_groups').delete().eq('id', groupToDelete.id)
 
-      if (error) throw error;
+      if (error) throw error
 
-      await queryClient.invalidateQueries({ queryKey: ['exerciseGroups'] });
-      setGroupToDelete(null);
+      await queryClient.invalidateQueries({ queryKey: ['exerciseGroups'] })
+      setGroupToDelete(null)
     } catch (error) {
-      console.error('Error deleting exercise group:', error);
+      console.error('Error deleting exercise group:', error)
     }
-  };
+  }
 
   return (
     <div>
@@ -114,8 +114,8 @@ export function ExerciseGroupsList() {
           type="multiple"
           className="w-full space-y-4"
           onValueChange={(values) => {
-            const lastValue = values[values.length - 1];
-            setSelectedGroupId(lastValue || null);
+            const lastValue = values[values.length - 1]
+            setSelectedGroupId(lastValue || null)
           }}
         >
           {exerciseGroups?.map((group) => (
@@ -153,8 +153,8 @@ export function ExerciseGroupsList() {
                     <Button
                       size="sm"
                       onClick={() => {
-                        setSelectedGroupId(group.id);
-                        setShowCreateTemplateDialog(true);
+                        setSelectedGroupId(group.id)
+                        setShowCreateTemplateDialog(true)
                       }}
                     >
                       <Plus className="mr-2 h-4 w-4" />
@@ -189,8 +189,8 @@ export function ExerciseGroupsList() {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the exercise group "{groupToDelete?.name}" and all its
-              exercises. This action cannot be undone.
+              This will permanently delete the exercise group &quot;{groupToDelete?.name}&quot; and
+              all its exercises. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -213,5 +213,5 @@ export function ExerciseGroupsList() {
         />
       )}
     </div>
-  );
+  )
 }
