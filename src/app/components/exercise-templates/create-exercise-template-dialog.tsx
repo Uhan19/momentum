@@ -1,14 +1,14 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { Button } from '@/components/ui/button'
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from '@/components/ui/dialog'
+} from '@/components/ui/dialog';
 import {
   Form,
   FormControl,
@@ -16,14 +16,14 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useFieldArray, useForm } from 'react-hook-form'
-import * as z from 'zod'
-import { useSupabase } from '@/providers/supabase-provider'
-import { useQueryClient } from '@tanstack/react-query'
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useFieldArray, useForm } from 'react-hook-form';
+import * as z from 'zod';
+import { useSupabase } from '@/providers/supabase-provider';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   DndContext,
   closestCenter,
@@ -32,15 +32,15 @@ import {
   useSensor,
   useSensors,
   DragEndEvent,
-} from '@dnd-kit/core'
+} from '@dnd-kit/core';
 import {
   arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
-} from '@dnd-kit/sortable'
-import { SortableExerciseItem } from './sortable-exercise-item'
-import { AddExerciseDialog } from './add-exercise-dialog'
+} from '@dnd-kit/sortable';
+import { SortableExerciseItem } from './sortable-exercise-item';
+import { AddExerciseDialog } from './add-exercise-dialog';
 
 const formSchema = z.object({
   title: z.string().min(1, 'Title is required').max(255, 'Title is too long'),
@@ -54,20 +54,20 @@ const formSchema = z.object({
       order_index: z.number(),
     }),
   ),
-})
+});
 
-export type FormValues = z.infer<typeof formSchema>
+export type FormValues = z.infer<typeof formSchema>;
 
 type Props = {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  groupId: string
-}
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  groupId: string;
+};
 
 export function CreateExerciseTemplateDialog({ open, onOpenChange, groupId }: Props) {
-  const [openAddExerciseDialog, setOpenAddExerciseDialog] = useState(false)
-  const { supabase } = useSupabase()
-  const queryClient = useQueryClient()
+  const [openAddExerciseDialog, setOpenAddExerciseDialog] = useState(false);
+  const { supabase } = useSupabase();
+  const queryClient = useQueryClient();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -76,45 +76,34 @@ export function CreateExerciseTemplateDialog({ open, onOpenChange, groupId }: Pr
       notes: '',
       exercises: [], // Initialize empty array
     },
-  })
+  });
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: 'exercises',
-  })
-
-  // Add exercise handler
-  const handleAddExercise = () => {
-    append({
-      exercise_id: '',
-      sets: 3,
-      reps: 10,
-      weight_type: 'kg',
-      order_index: fields.length,
-    })
-  }
+  });
 
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     }),
-  )
+  );
 
   const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event
+    const { active, over } = event;
 
     if (over && active.id !== over.id) {
-      const oldIndex = fields.findIndex((item) => item.id === active.id)
-      const newIndex = fields.findIndex((item) => item.id === over.id)
+      const oldIndex = fields.findIndex((item) => item.id === active.id);
+      const newIndex = fields.findIndex((item) => item.id === over.id);
 
-      const newOrder = arrayMove(fields, oldIndex, newIndex)
+      const newOrder = arrayMove(fields, oldIndex, newIndex);
       // Update order_index for each item
       newOrder.forEach((item, index) => {
-        form.setValue(`exercises.${index}.order_index`, index)
-      })
+        form.setValue(`exercises.${index}.order_index`, index);
+      });
     }
-  }
+  };
 
   async function onSubmit(values: FormValues) {
     try {
@@ -129,9 +118,9 @@ export function CreateExerciseTemplateDialog({ open, onOpenChange, groupId }: Pr
           },
         ])
         .select()
-        .single()
+        .single();
 
-      if (templateError) throw templateError
+      if (templateError) throw templateError;
 
       // Then create the template exercises
       const { error: exercisesError } = await supabase.from('template_exercises').insert(
@@ -139,16 +128,16 @@ export function CreateExerciseTemplateDialog({ open, onOpenChange, groupId }: Pr
           template_id: template.id,
           ...exercise,
         })),
-      )
+      );
 
-      if (exercisesError) throw exercisesError
+      if (exercisesError) throw exercisesError;
 
-      await queryClient.invalidateQueries({ queryKey: ['exerciseTemplates', groupId] })
+      await queryClient.invalidateQueries({ queryKey: ['exerciseTemplates', groupId] });
 
-      onOpenChange(false)
-      form.reset()
+      onOpenChange(false);
+      form.reset();
     } catch (error) {
-      console.error('Error creating template:', error)
+      console.error('Error creating template:', error);
     }
   }
 
@@ -249,5 +238,5 @@ export function CreateExerciseTemplateDialog({ open, onOpenChange, groupId }: Pr
         </Form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

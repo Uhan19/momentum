@@ -1,24 +1,25 @@
-'use client'
+'use client';
 
-import { useSupabase } from '@/providers/supabase-provider'
-import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
+import { useSupabase } from '@/providers/supabase-provider';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+} from '@/components/ui/dropdown-menu';
+import { User } from 'lucide-react';
 
 export function DashboardHeader() {
-  const { supabase, user } = useSupabase()
-  const router = useRouter()
+  const { supabase, user } = useSupabase();
+  const router = useRouter();
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut()
-    router.push('/auth')
-  }
-  console.log('user', user)
+    await supabase.auth.signOut();
+    router.push('/auth');
+  };
+  console.log('user', user);
   return (
     <header className="border-b">
       <div className="flex h-16 items-center px-4">
@@ -26,9 +27,9 @@ export function DashboardHeader() {
         <div className="ml-auto flex items-center">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-4 w-4 rounded-full">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
-                  <span className="text-sm font-medium">{user?.email?.[0].toUpperCase()}</span>
+              <Button variant="ghost" className="relative">
+                <div className="flex h-8 w-8 items-center rounded-full justify-center bg-muted">
+                  <User className="h-4 w-4" />
                 </div>
               </Button>
             </DropdownMenuTrigger>
@@ -39,5 +40,5 @@ export function DashboardHeader() {
         </div>
       </div>
     </header>
-  )
+  );
 }
