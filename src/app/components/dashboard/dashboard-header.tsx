@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { User } from 'lucide-react';
+import { ModeToggle } from './mode-toggle';
 
 export function DashboardHeader() {
   const { supabase, user } = useSupabase();
@@ -25,6 +26,7 @@ export function DashboardHeader() {
       <div className="flex h-16 items-center px-2">
         <h2 className="text-2xl font-bold ml-4">Momentum</h2>
         <div className="ml-auto flex items-center">
+          <ModeToggle />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative">

@@ -36,7 +36,7 @@ export const StartExerciseTemplateDialog = ({ templateId }: StartExerciseTemplat
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
           <Button
-            className="bg-green-200 hover:bg-green-400 mr-6"
+            className="bg-green-200 hover:bg-green-400 mr-6 dark:bg-green-800 dark:hover:bg-green-700"
             variant="secondary"
             size="icon"
             onClick={() => setOpen(true)}
