@@ -22,8 +22,8 @@ export function DashboardHeader() {
   console.log('user', user);
   return (
     <header className="border-b">
-      <div className="flex h-16 items-center px-4">
-        <h2 className="text-2xl font-bold">Momentum</h2>
+      <div className="flex h-16 items-center px-2">
+        <h2 className="text-2xl font-bold ml-4">Momentum</h2>
         <div className="ml-auto flex items-center">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

@@ -78,9 +78,8 @@ export function ExerciseGroupsList() {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Exercise Groups</h1>
-        <Button onClick={() => setShowCreateDialog(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Create Group
+        <Button variant="outline" size="icon" onClick={() => setShowCreateDialog(true)}>
+          <Plus className="h-4 w-4" />
         </Button>
       </div>
 
@@ -127,13 +126,12 @@ export function ExerciseGroupsList() {
                 <div className="py-4">
                   <ExerciseTemplates selectedGroupId={selectedGroupId} />
                   <Button
-                    className="w-full mt-4 bg-seamaster-green hover:bg-seamaster-green/90"
+                    className="w-full mt-4 bg-transparent border-2 rounded-full border-seamaster-green text-seamaster-green hover:bg-seamaster-green/20 hover:text-white"
                     onClick={() => {
                       setSelectedGroupId(group.id);
                       setShowCreateTemplateDialog(true);
                     }}
                   >
-                    <Plus className="mr-2 h-4 w-4" />
                     Add template
                   </Button>
                 </div>
