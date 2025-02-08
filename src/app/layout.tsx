@@ -5,7 +5,7 @@ import './globals.css';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from '@/contexts';
 import SupabaseProvider from '@/providers/supabase-provider';
-
+import { ThemeProvider } from '@/components/theme-provider';
 const geistSans = Geist({
   variable: '--font-geist-sans',
   subsets: ['latin'],
@@ -26,11 +26,18 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <QueryClientProvider client={queryClient}>
-          <AuthProvider>
-            <SupabaseProvider>{children}</SupabaseProvider>
-          </AuthProvider>
-        </QueryClientProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <QueryClientProvider client={queryClient}>
+            <AuthProvider>
+              <SupabaseProvider>{children}</SupabaseProvider>
+            </AuthProvider>
+          </QueryClientProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

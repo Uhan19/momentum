@@ -29,19 +29,12 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { CreateExerciseTemplateDialog } from '../exercise-templates/create-exercise-template-dialog';
-import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { ExerciseTemplates } from './exercise-templates';
 
 type ExerciseGroup = {
   id: string;
   name: string;
   description: string | null;
-  created_at: string;
-};
-
-type ExerciseTemplate = {
-  id: string;
-  title: string;
-  notes: string | null;
   created_at: string;
 };
 
@@ -66,22 +59,6 @@ export function ExerciseGroupsList() {
     },
   });
 
-  const { data: exerciseTemplates } = useQuery({
-    queryKey: ['exerciseTemplates', selectedGroupId],
-    queryFn: async () => {
-      if (!selectedGroupId) return [];
-      const { data, error } = await supabase
-        .from('exercise_templates')
-        .select('*')
-        .eq('group_id', selectedGroupId)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      return data as ExerciseTemplate[];
-    },
-    enabled: !!selectedGroupId,
-  });
-
   const handleDelete = async () => {
     if (!groupToDelete) return;
 
@@ -100,10 +77,9 @@ export function ExerciseGroupsList() {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Exercise Groups</h1>
-        <Button onClick={() => setShowCreateDialog(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Create Group
+        <h1 className="text-2xl font-bold">Templates</h1>
+        <Button variant="outline" size="icon" onClick={() => setShowCreateDialog(true)}>
+          <Plus className="h-4 w-4" />
         </Button>
       </div>
 
@@ -148,33 +124,16 @@ export function ExerciseGroupsList() {
               </div>
               <AccordionContent className="px-4">
                 <div className="py-4">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-sm font-medium">Exercise Templates</h3>
-                    <Button
-                      size="sm"
-                      onClick={() => {
-                        setSelectedGroupId(group.id);
-                        setShowCreateTemplateDialog(true);
-                      }}
-                    >
-                      <Plus className="mr-2 h-4 w-4" />
-                      Add Template
-                    </Button>
-                  </div>
-
-                  <div className="grid gap-4 md:grid-cols-2">
-                    {exerciseTemplates?.map((template) => (
-                      <Card key={template.id}>
-                        <CardHeader>
-                          <CardTitle className="text-base">{template.title}</CardTitle>
-                          {template.notes && <CardDescription>{template.notes}</CardDescription>}
-                        </CardHeader>
-                      </Card>
-                    ))}
-                    {exerciseTemplates?.length === 0 && (
-                      <div className="text-sm text-muted-foreground">No templates yet</div>
-                    )}
-                  </div>
+                  <ExerciseTemplates selectedGroupId={selectedGroupId} />
+                  <Button
+                    className="w-full mt-4 bg-transparent border-2 rounded-full border-seamaster-green text-seamaster-green hover:bg-seamaster-green/20 hover:text-white dark:border-white dark:text-white"
+                    onClick={() => {
+                      setSelectedGroupId(group.id);
+                      setShowCreateTemplateDialog(true);
+                    }}
+                  >
+                    Add template
+                  </Button>
                 </div>
               </AccordionContent>
             </AccordionItem>
@@ -189,8 +148,8 @@ export function ExerciseGroupsList() {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the exercise group "{groupToDelete?.name}" and all its
-              exercises. This action cannot be undone.
+              This will permanently delete the exercise group &quot;{groupToDelete?.name}&quot; and
+              all its exercises. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

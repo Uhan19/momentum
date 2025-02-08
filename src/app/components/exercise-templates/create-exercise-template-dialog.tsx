@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -23,7 +24,6 @@ import { useFieldArray, useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { useSupabase } from '@/providers/supabase-provider';
 import { useQueryClient } from '@tanstack/react-query';
-import { Plus } from 'lucide-react';
 import {
   DndContext,
   closestCenter,
@@ -39,8 +39,8 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { useQuery } from '@tanstack/react-query';
 import { SortableExerciseItem } from './sortable-exercise-item';
+import { AddExerciseDialog } from './add-exercise-dialog';
 
 const formSchema = z.object({
   title: z.string().min(1, 'Title is required').max(255, 'Title is too long'),
@@ -52,11 +52,11 @@ const formSchema = z.object({
       reps: z.coerce.number().min(1, 'Must have at least 1 rep'),
       weight_type: z.enum(['kg', 'lbs']),
       order_index: z.number(),
-    })
+    }),
   ),
 });
 
-type FormValues = z.infer<typeof formSchema>;
+export type FormValues = z.infer<typeof formSchema>;
 
 type Props = {
   open: boolean;
@@ -65,6 +65,7 @@ type Props = {
 };
 
 export function CreateExerciseTemplateDialog({ open, onOpenChange, groupId }: Props) {
+  const [openAddExerciseDialog, setOpenAddExerciseDialog] = useState(false);
   const { supabase } = useSupabase();
   const queryClient = useQueryClient();
 
@@ -82,39 +83,11 @@ export function CreateExerciseTemplateDialog({ open, onOpenChange, groupId }: Pr
     name: 'exercises',
   });
 
-  // Add exercise handler
-  const handleAddExercise = () => {
-    append({
-      exercise_id: '',
-      sets: 3,
-      reps: 10,
-      weight_type: 'kg',
-      order_index: fields.length,
-    });
-  };
-
-  const { data: exercises = [] } = useQuery({
-    queryKey: ['exerciseDefinitions'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('exercise_definitions')
-        .select('id, name')
-        .order('name');
-
-      if (error) {
-        console.error('Error fetching exercises:', error);
-        return [];
-      }
-
-      return data || [];
-    },
-  });
-
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
-    })
+    }),
   );
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -154,7 +127,7 @@ export function CreateExerciseTemplateDialog({ open, onOpenChange, groupId }: Pr
         values.exercises.map((exercise) => ({
           template_id: template.id,
           ...exercise,
-        }))
+        })),
       );
 
       if (exercisesError) throw exercisesError;
@@ -209,10 +182,16 @@ export function CreateExerciseTemplateDialog({ open, onOpenChange, groupId }: Pr
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <FormLabel>Exercises</FormLabel>
-                <Button type="button" variant="outline" size="sm" onClick={handleAddExercise}>
+                {/* <Button type="button" variant="outline" size="sm" onClick={handleAddExercise}>
                   <Plus className="mr-2 h-4 w-4" />
                   Add Exercise
-                </Button>
+                </Button> */}
+                <AddExerciseDialog
+                  fields={fields}
+                  append={append}
+                  openAddExerciseDialog={openAddExerciseDialog}
+                  setOpenAddExerciseDialog={setOpenAddExerciseDialog}
+                />
               </div>
 
               {/* Column Headers - Only show on desktop */}
@@ -240,7 +219,7 @@ export function CreateExerciseTemplateDialog({ open, onOpenChange, groupId }: Pr
                         key={field.id}
                         id={field.id}
                         index={index}
-                        exercises={exercises}
+                        exercises={[]}
                         remove={remove}
                         form={form}
                       />

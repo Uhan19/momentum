@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Home, User } from 'lucide-react';
 
 const navigation = [
@@ -47,6 +47,9 @@ export function DashboardSidebar({
     <>
       {/* Mobile sidebar */}
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
+        <SheetHeader>
+          <SheetTitle className="text-2xl font-bold text-white">Momentum</SheetTitle>
+        </SheetHeader>
         <SheetContent side="left" className="w-64 p-0">
           <SidebarContent />
         </SheetContent>

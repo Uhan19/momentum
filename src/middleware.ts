@@ -4,7 +4,7 @@ import type { NextRequest } from 'next/server';
 import type { Database } from '@/lib/database.types';
 
 // Add routes that don't require authentication
-const publicRoutes = ['/auth'];
+const publicRoutes = ['/auth', '/'];
 
 export async function middleware(req: NextRequest) {
   console.log('Middleware running, path:', req.nextUrl.pathname);

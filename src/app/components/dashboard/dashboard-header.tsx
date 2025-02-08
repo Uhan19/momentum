@@ -9,9 +9,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Menu } from 'lucide-react';
+import { User } from 'lucide-react';
+import { ModeToggle } from './mode-toggle';
 
-export function DashboardHeader({ onMenuClick }: { onMenuClick: () => void }) {
+export function DashboardHeader() {
   const { supabase, user } = useSupabase();
   const router = useRouter();
 
@@ -19,20 +20,18 @@ export function DashboardHeader({ onMenuClick }: { onMenuClick: () => void }) {
     await supabase.auth.signOut();
     router.push('/auth');
   };
-
+  console.log('user', user);
   return (
     <header className="border-b">
-      <div className="flex h-16 items-center px-4">
-        <Button variant="ghost" className="lg:hidden" size="icon" onClick={onMenuClick}>
-          <Menu className="h-6 w-6" />
-          <span className="sr-only">Open sidebar</span>
-        </Button>
-        <div className="ml-auto flex items-center space-x-4">
+      <div className="flex h-16 items-center px-2">
+        <h2 className="text-2xl font-bold ml-4">Momentum</h2>
+        <div className="ml-auto flex items-center">
+          <ModeToggle />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
-                  <span className="text-sm font-medium">{user?.email?.[0].toUpperCase()}</span>
+              <Button variant="ghost" className="relative">
+                <div className="flex h-8 w-8 items-center rounded-full justify-center bg-muted">
+                  <User className="h-4 w-4" />
                 </div>
               </Button>
             </DropdownMenuTrigger>
