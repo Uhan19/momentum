@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { Plus, MoreVertical, Trash, SquarePlus } from 'lucide-react';
+import { Plus, MoreVertical, Trash } from 'lucide-react';
 import { useState } from 'react';
 import { CreateExerciseGroupDialog } from './create-exercise-group-dialog';
 import { useSupabase } from '@/providers/supabase-provider';

@@ -1,8 +1,6 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { DashboardSidebar } from './dashboard-sidebar'
-import { DashboardHeader } from './dashboard-header'
+import { DashboardHeader } from './dashboard-header';
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -12,5 +10,5 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         <div className="mx-auto max-w-7xl px-6 sm:px-6 lg:px-8">{children}</div>
       </main>
     </div>
-  )
+  );
 }

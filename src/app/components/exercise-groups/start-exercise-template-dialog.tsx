@@ -21,7 +21,7 @@ export const StartExerciseTemplateDialog = ({ templateId }: StartExerciseTemplat
   const { data: template } = useQuery({
     queryKey: ['exerciseTemplate', templateId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('exercise_templates')
         .select('*')
         .eq('id', templateId)
