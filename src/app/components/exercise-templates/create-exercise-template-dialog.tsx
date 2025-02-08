@@ -145,7 +145,7 @@ export function CreateExerciseTemplateDialog({ open, onOpenChange, groupId }: Pr
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Create Exercise Template</DialogTitle>
+          <DialogTitle>Create exercise template</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">

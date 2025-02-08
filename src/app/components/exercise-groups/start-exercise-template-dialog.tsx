@@ -1,5 +1,3 @@
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase';
 import {
   Dialog,
   DialogHeader,
@@ -11,45 +9,48 @@ import {
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { Play } from 'lucide-react';
-
+import { TemplateExercisesWithDefinitionsArray } from '@/types';
+import { ExerciseRows } from './exercise-rows';
 interface StartExerciseTemplateDialogProps {
-  templateId: string;
+  title: string;
+  notes: string;
+  templateExerciseAndDefinition: TemplateExercisesWithDefinitionsArray;
 }
 
-export const StartExerciseTemplateDialog = ({ templateId }: StartExerciseTemplateDialogProps) => {
+export const StartExerciseTemplateDialog = ({
+  title,
+  notes,
+  templateExerciseAndDefinition,
+}: StartExerciseTemplateDialogProps) => {
   const [open, setOpen] = useState(false);
-  const { data: template } = useQuery({
-    queryKey: ['exerciseTemplate', templateId],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('exercise_templates')
-        .select('*')
-        .eq('id', templateId)
-        .single();
-      return data;
-    },
-  });
 
-  console.log('template', template);
+  console.log('templateExerciseAndDefinition', templateExerciseAndDefinition);
+
   return (
-    <div>
+    <div className="">
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
           <Button
-            className="bg-green-200 hover:bg-green-400 mr-6 dark:bg-green-800 dark:hover:bg-green-700"
+            className="h-10 w-10 bg-green-200 hover:bg-green-400 mr-6 dark:bg-green-800 dark:hover:bg-green-700"
             variant="secondary"
-            size="icon"
             onClick={() => setOpen(true)}
           >
-            <Play className="w-4 h-4" />
+            <Play />
           </Button>
         </DialogTrigger>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{template?.title}</DialogTitle>
-            <DialogDescription>{template?.description}</DialogDescription>
+        <DialogContent className="p-0 border-none shadow-2xl shadow-white rounded-md max-w-[calc(100vw-2rem)] sm:max-w-2xl">
+          <DialogHeader className="flex flex-col gap-2 items-start p-4">
+            <DialogTitle>{title}</DialogTitle>
+            <DialogDescription>{notes}</DialogDescription>
           </DialogHeader>
-          [LIST OF EXERCISES]
+          {templateExerciseAndDefinition?.map((exercise) => (
+            <ExerciseRows key={exercise.id} exercises={exercise} />
+          ))}
+          <div className="flex justify-center px-4 mb-4">
+            <Button className="w-full" variant="destructive">
+              Cancel workout
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
