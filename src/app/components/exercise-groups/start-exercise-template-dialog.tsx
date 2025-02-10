@@ -1,5 +1,3 @@
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase';
 import {
   Dialog,
   DialogHeader,
@@ -9,47 +7,77 @@ import {
   DialogContent,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { useState } from 'react';
-import { Play } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Dumbbell, Play } from 'lucide-react';
+import { TemplateExercisesWithDefinitionsArray } from '@/types';
+import { useExerciseTemplateStore } from '@/store/use-exercise-template-store';
+import { useRouter } from 'next/navigation';
 
 interface StartExerciseTemplateDialogProps {
-  templateId: string;
+  id: string;
+  title: string;
+  notes: string;
+  templateExerciseAndDefinition: TemplateExercisesWithDefinitionsArray;
 }
 
-export const StartExerciseTemplateDialog = ({ templateId }: StartExerciseTemplateDialogProps) => {
+export const StartExerciseTemplateDialog = ({
+  id,
+  title,
+  notes,
+  templateExerciseAndDefinition,
+}: StartExerciseTemplateDialogProps) => {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
-  const { data: template } = useQuery({
-    queryKey: ['exerciseTemplate', templateId],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('exercise_templates')
-        .select('*')
-        .eq('id', templateId)
-        .single();
-      return data;
-    },
-  });
+  const setExerciseTemplate = useExerciseTemplateStore((state) => state.setExerciseTemplate);
 
-  console.log('template', template);
+  useEffect(() => {
+    if (templateExerciseAndDefinition) {
+      setExerciseTemplate(id, templateExerciseAndDefinition);
+    }
+  }, [setExerciseTemplate, templateExerciseAndDefinition, id]);
+
+  console.log('templateExerciseAndDefinition', templateExerciseAndDefinition);
+
   return (
-    <div>
+    <div className="">
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
           <Button
-            className="bg-green-200 hover:bg-green-400 mr-6 dark:bg-green-800 dark:hover:bg-green-700"
+            className="h-10 w-25 bg-green-200 hover:bg-green-400 mr-6 dark:bg-green-800 dark:hover:bg-green-700"
             variant="secondary"
-            size="icon"
             onClick={() => setOpen(true)}
           >
-            <Play className="w-4 h-4" />
+            <span className="font-bold">Preview</span>
+            <Dumbbell />
           </Button>
         </DialogTrigger>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{template?.title}</DialogTitle>
-            <DialogDescription>{template?.description}</DialogDescription>
+        <DialogContent className="p-0 border-none shadow-2xl shadow-white rounded-md max-w-[calc(100vw-2rem)] sm:max-w-2xl">
+          <DialogHeader className="flex flex-col gap-2 items-start p-4">
+            <DialogTitle>{title}</DialogTitle>
+            <DialogDescription>{notes}</DialogDescription>
           </DialogHeader>
-          [LIST OF EXERCISES]
+          {templateExerciseAndDefinition?.map((exercise) => {
+            const { sets, reps, exercise_definitions } = exercise;
+            const { name, description } = exercise_definitions;
+            return (
+              <div className="flex flex-col px-4" key={exercise.id}>
+                <h1 className="font-bold">{name}</h1>
+                <p>{description}</p>
+                <p className="italic">
+                  {sets} sets of {reps} reps
+                </p>
+              </div>
+            );
+          })}
+          <div className="flex justify-center px-4 mb-4">
+            <Button
+              className="w-full bg-green-200 hover:bg-green-400 mr-6 dark:bg-green-800 dark:hover:bg-green-700"
+              variant="secondary"
+              onClick={() => router.push(`/exercises/template/${id}`)}
+            >
+              <Play />
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

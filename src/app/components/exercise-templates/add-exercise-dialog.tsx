@@ -1,37 +1,36 @@
-import { Button } from '@/components/ui/button'
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogTrigger,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { Check, Plus, Save } from 'lucide-react'
+} from '@/components/ui/dialog';
+import { Check, Plus, Save } from 'lucide-react';
 import {
   Command,
   CommandInput,
   CommandList,
   CommandEmpty,
   CommandItem,
-} from '@/components/ui/command'
-import { useQuery } from '@tanstack/react-query'
-import { supabase } from '@/lib/supabase'
-import { useState } from 'react'
-import { ExerciseDefinition } from '@/types'
-import { ExerciseFields } from '@/types'
-import { FormValues } from './create-exercise-template-dialog'
-import { UseFieldArrayReturn } from 'react-hook-form'
+} from '@/components/ui/command';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/lib/supabase';
+import { useState } from 'react';
+import { ExerciseFields, ExerciseDefinition } from '@/types';
+import { FormValues } from './create-exercise-template-dialog';
+import { UseFieldArrayReturn } from 'react-hook-form';
 
 interface AddExerciseDialogProps {
-  openAddExerciseDialog: boolean
-  setOpenAddExerciseDialog: (open: boolean) => void
-  fields: ExerciseFields
-  append: UseFieldArrayReturn<FormValues, 'exercises', 'id'>['append']
+  openAddExerciseDialog: boolean;
+  setOpenAddExerciseDialog: (open: boolean) => void;
+  fields: ExerciseFields;
+  append: UseFieldArrayReturn<FormValues, 'exercises', 'id'>['append'];
 }
 
 export const AddExerciseDialog = (props: AddExerciseDialogProps) => {
-  const { fields, append, openAddExerciseDialog, setOpenAddExerciseDialog } = props
-  const [selectedExercise, setSelectedExercise] = useState<ExerciseDefinition[]>([])
+  const { fields, append, openAddExerciseDialog, setOpenAddExerciseDialog } = props;
+  const [selectedExercise, setSelectedExercise] = useState<ExerciseDefinition[]>([]);
 
   const { data: exercises = [] } = useQuery({
     queryKey: ['exerciseDefinitions'],
@@ -39,24 +38,24 @@ export const AddExerciseDialog = (props: AddExerciseDialogProps) => {
       const { data, error } = await supabase
         .from('exercise_definitions')
         .select('id, name')
-        .order('name')
+        .order('name');
 
       if (error) {
-        console.error('Error fetching exercises:', error)
-        return []
+        console.error('Error fetching exercises:', error);
+        return [];
       }
 
-      return data || []
+      return data || [];
     },
-  })
+  });
 
   const handleExerciseClick = (exercise: ExerciseDefinition) => {
     if (selectedExercise.filter((element) => element.id === exercise.id).length === 0) {
-      setSelectedExercise([...selectedExercise, exercise])
+      setSelectedExercise([...selectedExercise, exercise]);
     } else {
-      setSelectedExercise(selectedExercise.filter((element) => element.id !== exercise.id))
+      setSelectedExercise(selectedExercise.filter((element) => element.id !== exercise.id));
     }
-  }
+  };
 
   const handleSaveExercise = () => {
     selectedExercise.forEach((exercise) => {
@@ -66,10 +65,10 @@ export const AddExerciseDialog = (props: AddExerciseDialogProps) => {
         reps: 10,
         weight_type: 'lbs',
         order_index: fields.length,
-      })
-    })
-    setOpenAddExerciseDialog(false)
-  }
+      });
+    });
+    setOpenAddExerciseDialog(false);
+  };
 
   return (
     <div>
@@ -111,5 +110,5 @@ export const AddExerciseDialog = (props: AddExerciseDialogProps) => {
         </DialogContent>
       </Dialog>
     </div>
-  )
-}
+  );
+};

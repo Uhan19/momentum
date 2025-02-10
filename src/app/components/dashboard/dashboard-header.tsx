@@ -13,14 +13,14 @@ import { User } from 'lucide-react';
 import { ModeToggle } from './mode-toggle';
 
 export function DashboardHeader() {
-  const { supabase, user } = useSupabase();
+  const { supabase } = useSupabase();
   const router = useRouter();
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     router.push('/auth');
   };
-  console.log('user', user);
+
   return (
     <header className="border-b">
       <div className="flex h-16 items-center px-2">
