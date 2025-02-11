@@ -45,8 +45,8 @@ export const ExerciseRows = ({ exercises }: ExerciseRowsProps) => {
 
   return (
     <div>
-      <h3 className="text-md font-bold px-2">{name}</h3>
-      <div className="grid grid-cols-[40px_1fr_1fr_1fr_35px] gap-2 mb-1 px-2">
+      <h3 className="text-md font-bold exercise-name">{name}</h3>
+      <div className="grid grid-cols-[40px_1fr_1fr_1fr_35px] gap-2 mb-1">
         <div>Set</div>
         <div className="text-center">Previous</div>
         <div className="text-center">{weight_type}</div>
@@ -58,7 +58,7 @@ export const ExerciseRows = ({ exercises }: ExerciseRowsProps) => {
       {setsArray.map((set) => (
         <div
           key={set}
-          className={`grid grid-cols-[40px_1fr_1fr_1fr_35px] ${checkedSets.includes(set) ? 'bg-green-500/30' : ''} py-2 px-2`}
+          className={`grid grid-cols-[40px_1fr_1fr_1fr_35px] ${checkedSets.includes(set) ? 'bg-green-500/30' : ''} py-2`}
         >
           <span className="row-span-2">{set}</span>
           <div className="flex items-center justify-center">
@@ -77,7 +77,10 @@ export const ExerciseRows = ({ exercises }: ExerciseRowsProps) => {
             />
           </div>
           <div className="flex items-center justify-center">
-            <Check onClick={() => handleCheckClick(set)} className={`w-7 h-6 rounded-md ${getCheckColor(set)}`} />
+            <Check
+              onClick={() => handleCheckClick(set)}
+              className={`w-7 h-6 rounded-md ${getCheckColor(set)}`}
+            />
           </div>
         </div>
       ))}

@@ -72,3 +72,14 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+@layer components {
+  button.btn-success,
+  .btn-success {
+    @apply bg-green-200 hover:bg-green-400 dark:bg-green-800 dark:hover:bg-green-700;
+  }
+
+  .exercise-name {
+    @apply text-yellow-600 dark:text-yellow-500;
+  }
+}

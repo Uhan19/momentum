@@ -29,12 +29,28 @@ export const StartExerciseTemplateDialog = ({
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const setExerciseTemplate = useExerciseTemplateStore((state) => state.setExerciseTemplate);
+  const setExerciseTemplateTitle = useExerciseTemplateStore(
+    (state) => state.setExerciseTemplateTitle,
+  );
+  const setExerciseTemplateNotes = useExerciseTemplateStore(
+    (state) => state.setExerciseTemplateNotes,
+  );
 
   useEffect(() => {
     if (templateExerciseAndDefinition) {
       setExerciseTemplate(id, templateExerciseAndDefinition);
+      setExerciseTemplateTitle(title);
+      setExerciseTemplateNotes(notes);
     }
-  }, [setExerciseTemplate, templateExerciseAndDefinition, id]);
+  }, [
+    setExerciseTemplate,
+    setExerciseTemplateTitle,
+    setExerciseTemplateNotes,
+    templateExerciseAndDefinition,
+    id,
+    title,
+    notes,
+  ]);
 
   console.log('templateExerciseAndDefinition', templateExerciseAndDefinition);
 
@@ -43,7 +59,7 @@ export const StartExerciseTemplateDialog = ({
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
           <Button
-            className="h-10 w-25 bg-green-200 hover:bg-green-400 mr-6 dark:bg-green-800 dark:hover:bg-green-700"
+            className="h-10 w-25 mr-6 btn-success"
             variant="secondary"
             onClick={() => setOpen(true)}
           >
@@ -61,7 +77,7 @@ export const StartExerciseTemplateDialog = ({
             const { name, description } = exercise_definitions;
             return (
               <div className="flex flex-col px-4" key={exercise.id}>
-                <h1 className="font-bold">{name}</h1>
+                <h1 className="font-bold exercise-name">{name}</h1>
                 <p>{description}</p>
                 <p className="italic">
                   {sets} sets of {reps} reps
@@ -71,7 +87,7 @@ export const StartExerciseTemplateDialog = ({
           })}
           <div className="flex justify-center px-4 mb-4">
             <Button
-              className="w-full bg-green-200 hover:bg-green-400 mr-6 dark:bg-green-800 dark:hover:bg-green-700"
+              className="w-full mr-6 btn-success"
               variant="secondary"
               onClick={() => router.push(`/exercises/template/${id}`)}
             >
