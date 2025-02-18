@@ -17,6 +17,7 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from '@/components/ui/alert-dialog';
+import { WorkoutTimer } from '@/app/components/workout-timer';
 
 const TemplatePage = () => {
   const { id } = useParams();
@@ -29,6 +30,7 @@ const TemplatePage = () => {
   );
   const exerciseTemplateTitle = useExerciseTemplateStore((state) => state.exerciseTemplateTitle);
   const exerciseTemplateNotes = useExerciseTemplateStore((state) => state.exerciseTemplateNotes);
+  const [workoutStartTime, setWorkoutStartTime] = useState<string>('');
   console.log('exerciseTemplate', exerciseTemplate);
 
   useEffect(() => {
@@ -39,20 +41,25 @@ const TemplatePage = () => {
       if (savedSession) {
         const session = JSON.parse(savedSession);
         if (session.templateId === id) {
-          // Redirect to the saved session
+          setWorkoutStartTime(session.startTime);
           router.push(`/exercises/template/${id}?session=${session.sessionId}`);
         } else {
-          // Handle case where template ID doesn't match
           console.warn('Saved session is for a different template');
           localStorage.removeItem('current_workout_session');
         }
+      }
+    } else {
+      // Get start time from localStorage for existing session
+      const savedSession = localStorage.getItem('current_workout_session');
+      if (savedSession) {
+        const session = JSON.parse(savedSession);
+        setWorkoutStartTime(session.startTime);
       }
     }
   }, [workoutSessionId, id, router]);
 
   const handleFinishWorkout = async (sessionId: string) => {
     try {
-      // Update workout session status
       await supabase
         .from('workout_sessions')
         .update({
@@ -61,11 +68,9 @@ const TemplatePage = () => {
         })
         .eq('id', sessionId);
 
-      // Clear the localStorage
       localStorage.removeItem('current_workout_session');
 
-      // Navigate away or show completion screen
-      router.push('/workout-complete'); // or wherever you want to go
+      router.push('/');
     } catch (error) {
       console.error('Error finishing workout:', error);
     }
@@ -73,7 +78,6 @@ const TemplatePage = () => {
 
   const handleCancelWorkout = async (sessionId: string) => {
     try {
-      // Update workout session status
       await supabase
         .from('workout_sessions')
         .update({
@@ -82,11 +86,9 @@ const TemplatePage = () => {
         })
         .eq('id', sessionId);
 
-      // Clear the localStorage
       localStorage.removeItem('current_workout_session');
 
-      // Navigate back to templates or home
-      router.push('/dashboard');
+      router.push('/');
     } catch (error) {
       console.error('Error cancelling workout:', error);
     }
@@ -112,10 +114,10 @@ const TemplatePage = () => {
 
   return (
     <div className="flex flex-col gap-4 p-6 font-bold">
-      <div className="flex justify-between">
-        <Timer />
+      <div className="flex justify-between items-center">
+        {workoutStartTime && <WorkoutTimer startTime={workoutStartTime} />}
         <Button
-          onClick={() => handleFinishWorkout(workoutSessionId)}
+          onClick={() => handleFinishWorkout(workoutSessionId!)}
           variant="outline"
           className="font-bold btn-success"
         >

@@ -1,9 +1,6 @@
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { StartExerciseTemplateDialog } from './start-exercise-template-dialog';
 import { useQueryExerciseTemplate } from '@/hooks/useExerciseTemplate';
-import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Play } from 'lucide-react';
 
 interface ExerciseTemplatesProps {
   selectedGroupId: string | null;
@@ -11,9 +8,6 @@ interface ExerciseTemplatesProps {
 
 export const ExerciseTemplates = ({ selectedGroupId }: ExerciseTemplatesProps) => {
   const { exerciseTemplates } = useQueryExerciseTemplate(selectedGroupId);
-  const router = useRouter();
-
-  console.log('exerciseTemplates', exerciseTemplates);
 
   return (
     <div className="grid gap-4 md:grid-cols-2">

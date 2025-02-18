@@ -4,7 +4,7 @@ import type { NextRequest } from 'next/server';
 import type { Database } from '@/lib/database.types';
 
 // Add routes that don't require authentication
-const publicRoutes = ['/auth', '/'];
+const publicRoutes = ['/auth'];
 
 export async function middleware(req: NextRequest) {
   console.log('Middleware running, path:', req.nextUrl.pathname);
@@ -24,14 +24,16 @@ export async function middleware(req: NextRequest) {
 
     const isPublicRoute = publicRoutes.includes(req.nextUrl.pathname);
 
+    // If no session and trying to access protected route, redirect to auth
     if (!session && !isPublicRoute) {
       console.log('Redirecting to auth');
       return NextResponse.redirect(new URL('/auth', req.url));
     }
 
-    if (session && isPublicRoute) {
-      console.log('Redirecting to dashboard');
-      return NextResponse.redirect(new URL('/dashboard', req.url));
+    // If has session and trying to access auth page, redirect to home
+    if (session && req.nextUrl.pathname === '/auth') {
+      console.log('Redirecting to home');
+      return NextResponse.redirect(new URL('/', req.url));
     }
 
     return res;

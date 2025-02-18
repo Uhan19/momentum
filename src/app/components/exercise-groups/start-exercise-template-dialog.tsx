@@ -1,11 +1,11 @@
 import {
-  Dialog,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogTrigger,
-  DialogContent,
-} from '@/components/ui/dialog';
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerDescription,
+  DrawerTrigger,
+} from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { useEffect, useState } from 'react';
 import { Dumbbell, Play } from 'lucide-react';
@@ -121,9 +121,9 @@ export const StartExerciseTemplateDialog = ({
   };
 
   return (
-    <div className="">
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogTrigger asChild>
+    <div>
+      <Drawer open={open} onOpenChange={setOpen}>
+        <DrawerTrigger asChild>
           <Button
             className="h-10 w-25 mr-6 btn-success"
             variant="secondary"
@@ -132,12 +132,12 @@ export const StartExerciseTemplateDialog = ({
             <span className="font-bold">Preview</span>
             <Dumbbell />
           </Button>
-        </DialogTrigger>
-        <DialogContent className="p-0 border-none shadow-2xl shadow-white rounded-md max-w-[calc(100vw-2rem)] sm:max-w-2xl">
-          <DialogHeader className="flex flex-col gap-2 items-start p-4">
-            <DialogTitle>{title}</DialogTitle>
-            <DialogDescription>{notes}</DialogDescription>
-          </DialogHeader>
+        </DrawerTrigger>
+        <DrawerContent className="p-0 mb-8 border-none rounded-md w-full">
+          <DrawerHeader className="flex flex-col gap-2 items-start p-4">
+            <DrawerTitle>{title}</DrawerTitle>
+            <DrawerDescription>{notes}</DrawerDescription>
+          </DrawerHeader>
           {templateExerciseAndDefinition?.map((exercise) => {
             const { sets, reps, exercise_definitions } = exercise;
             const { name, description } = exercise_definitions;
@@ -153,15 +153,15 @@ export const StartExerciseTemplateDialog = ({
           })}
           <div className="flex justify-center px-4 mb-4">
             <Button
-              className="w-full mr-6 btn-success"
+              className="w-full mr-6 mt-4 btn-success"
               variant="secondary"
               onClick={() => handleStartWorkout()}
             >
               <Play />
             </Button>
           </div>
-        </DialogContent>
-      </Dialog>
+        </DrawerContent>
+      </Drawer>
     </div>
   );
 };

@@ -13,6 +13,7 @@ const poppins = Poppins({
   weight: ['100', '200', '300', '400', '500', '600', '700', '800', '900'],
 });
 
+// Move QueryClient outside of component to prevent recreation on each render
 const queryClient = new QueryClient();
 
 export default function RootLayout({
@@ -21,7 +22,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={`${poppins.variable} antialiased`}>
         <ThemeProvider
           attribute="class"
@@ -29,11 +30,11 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <QueryClientProvider client={queryClient}>
-            <AuthProvider>
-              <SupabaseProvider>{children}</SupabaseProvider>
-            </AuthProvider>
-          </QueryClientProvider>
+          <SupabaseProvider>
+            <QueryClientProvider client={queryClient}>
+              <AuthProvider>{children}</AuthProvider>
+            </QueryClientProvider>
+          </SupabaseProvider>
         </ThemeProvider>
       </body>
     </html>

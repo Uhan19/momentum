@@ -5,27 +5,27 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { Home, User } from 'lucide-react';
+import { Home, User, FileClock } from 'lucide-react';
 
 const navigation = [
   { name: 'Exercise Groups', href: '/', icon: Home },
-  { name: 'Profile', href: '/profile', icon: User },
+  { name: 'History', href: '/history', icon: FileClock },
+  { name: 'Settings', href: '/profile', icon: User },
   // Add more navigation items as needed
 ];
 
-export function DashboardSidebar({
+export const DashboardSidebar = ({
   isOpen,
   setIsOpen,
 }: {
   isOpen: boolean;
   setIsOpen: (value: boolean) => void;
-}) {
+}) => {
   const pathname = usePathname();
 
   const SidebarContent = () => (
     <div className="space-y-4 py-4">
       <div className="px-3 py-2">
-        <h2 className="mb-2 px-4 text-lg font-semibold">Dashboard</h2>
         <div className="space-y-1">
           {navigation.map((item) => (
             <Link key={item.name} href={item.href}>
@@ -47,10 +47,10 @@ export function DashboardSidebar({
     <>
       {/* Mobile sidebar */}
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
-        <SheetHeader>
-          <SheetTitle className="text-2xl font-bold text-white">Momentum</SheetTitle>
-        </SheetHeader>
         <SheetContent side="left" className="w-64 p-0">
+          <SheetHeader className="text-left">
+            <SheetTitle className="mt-4 ml-4 text-lg font-bold text-white">Momentum</SheetTitle>
+          </SheetHeader>
           <SidebarContent />
         </SheetContent>
       </Sheet>
@@ -66,4 +66,4 @@ export function DashboardSidebar({
       </div>
     </>
   );
-}
+};
