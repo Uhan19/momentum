@@ -57,6 +57,7 @@ export function ExerciseGroupsList() {
       if (error) throw error;
       return data as ExerciseGroup[];
     },
+    staleTime: 1000 * 60 * 60 * 24, // 24 hours
   });
 
   const handleDelete = async () => {

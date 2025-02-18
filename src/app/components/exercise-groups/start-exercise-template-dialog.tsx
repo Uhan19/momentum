@@ -12,6 +12,15 @@ import { Dumbbell, Play } from 'lucide-react';
 import { TemplateExercisesWithDefinitionsArray } from '@/types';
 import { useExerciseTemplateStore } from '@/store/use-exercise-template-store';
 import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
+
+interface WorkoutSessionStorage {
+  sessionId: string;
+  templateId: string;
+  startTime: string;
+  // TODO: Add `pause` later
+  status: 'in_progress';
+}
 
 interface StartExerciseTemplateDialogProps {
   id: string;
@@ -52,7 +61,64 @@ export const StartExerciseTemplateDialog = ({
     notes,
   ]);
 
-  console.log('templateExerciseAndDefinition', templateExerciseAndDefinition);
+  const handleStartWorkout = async () => {
+    try {
+      // Check if there's an existing workout session for this template
+      const existingSession = localStorage.getItem('current_workout_session');
+      if (existingSession) {
+        const session = JSON.parse(existingSession) as WorkoutSessionStorage;
+        // Redirect to existing session
+        router.push(`/exercises/template/${session.templateId}?session=${session.sessionId}`);
+        return;
+      }
+
+      // Create the workout session
+      const { data: workoutSession, error: sessionError } = await supabase
+        .from('workout_sessions')
+        .insert({
+          template_id: id,
+          status: 'in_progress',
+        })
+        .select()
+        .single();
+
+      if (sessionError) {
+        throw sessionError;
+      }
+
+      // Save the workout session to local storage
+      const sessionStorage: WorkoutSessionStorage = {
+        sessionId: workoutSession.id,
+        templateId: id,
+        startTime: new Date().toISOString(),
+        status: 'in_progress',
+      };
+      localStorage.setItem('current_workout_session', JSON.stringify(sessionStorage));
+
+      // Create the workout session exercises
+      const workoutExercises = templateExerciseAndDefinition.map((exercise) => ({
+        workout_session_id: workoutSession.id,
+        exercise_id: exercise.exercise_definitions.id,
+        planned_sets: exercise.sets,
+        planned_reps: exercise.reps,
+        is_template_exercise: true,
+        template_exercise_id: exercise.id,
+        order_index: exercise.order_index || 0,
+      }));
+
+      const { error: exerciseError } = await supabase
+        .from('workout_session_exercises')
+        .insert(workoutExercises);
+
+      if (exerciseError) {
+        throw exerciseError;
+      }
+
+      router.push(`/exercises/template/${id}?session=${workoutSession.id}`);
+    } catch (error) {
+      console.error('Error starting workout', error);
+    }
+  };
 
   return (
     <div className="">
@@ -89,7 +155,7 @@ export const StartExerciseTemplateDialog = ({
             <Button
               className="w-full mr-6 btn-success"
               variant="secondary"
-              onClick={() => router.push(`/exercises/template/${id}`)}
+              onClick={() => handleStartWorkout()}
             >
               <Play />
             </Button>
