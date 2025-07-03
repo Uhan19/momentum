@@ -1,22 +1,15 @@
 'use client';
 
-import { Footer } from './components/footer/footer';
 import { ExerciseGroupsList } from '@/app/components/exercise-groups/exercise-groups-list';
-import { DashboardHeader } from './components/dashboard/dashboard-header';
-import { DashboardSidebar } from './components/dashboard/dashboard-sidebar';
-import { useState } from 'react';
+import { AuthenticatedLayout } from '@/app/components/layout/authenticated-layout';
 
 export default function Home() {
-  const [isOpen, setIsOpen] = useState(false);
-
   return (
-    <div className="min-h-screen flex flex-col font-[family-name:var(--font-font-geist-sans)]">
-      <DashboardHeader setIsOpen={setIsOpen} />
-      <main className="flex-1">
-        <DashboardSidebar isOpen={isOpen} setIsOpen={setIsOpen} />
+    <AuthenticatedLayout>
+      <div className="container mx-auto px-4 py-6">
+        <h1 className="text-3xl font-bold mb-6">Start a workout</h1>
         <ExerciseGroupsList />
-        <Footer />
-      </main>
-    </div>
+      </div>
+    </AuthenticatedLayout>
   );
 }

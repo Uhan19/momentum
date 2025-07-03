@@ -224,6 +224,7 @@ export type Database = {
           id: string
           notes: string | null
           start_time: string | null
+          status: string | null
           template_id: string | null
           user_id: string | null
         }
@@ -232,6 +233,7 @@ export type Database = {
           id?: string
           notes?: string | null
           start_time?: string | null
+          status?: string | null
           template_id?: string | null
           user_id?: string | null
         }
@@ -240,6 +242,7 @@ export type Database = {
           id?: string
           notes?: string | null
           start_time?: string | null
+          status?: string | null
           template_id?: string | null
           user_id?: string | null
         }
@@ -249,6 +252,67 @@ export type Database = {
             columns: ["template_id"]
             isOneToOne: false
             referencedRelation: "exercise_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workout_session_exercises: {
+        Row: {
+          created_at: string | null
+          exercise_id: string | null
+          id: string
+          is_template_exercise: boolean | null
+          order_index: number
+          planned_reps: number | null
+          planned_sets: number
+          template_exercise_id: string | null
+          weight_type: string | null
+          workout_session_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          exercise_id?: string | null
+          id?: string
+          is_template_exercise?: boolean | null
+          order_index: number
+          planned_reps?: number | null
+          planned_sets: number
+          template_exercise_id?: string | null
+          weight_type?: string | null
+          workout_session_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          exercise_id?: string | null
+          id?: string
+          is_template_exercise?: boolean | null
+          order_index?: number
+          planned_reps?: number | null
+          planned_sets?: number
+          template_exercise_id?: string | null
+          weight_type?: string | null
+          workout_session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workout_session_exercises_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercise_definitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workout_session_exercises_workout_session_id_fkey"
+            columns: ["workout_session_id"]
+            isOneToOne: false
+            referencedRelation: "workout_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workout_session_exercises_template_exercise_id_fkey"
+            columns: ["template_exercise_id"]
+            isOneToOne: false
+            referencedRelation: "template_exercises"
             referencedColumns: ["id"]
           },
         ]

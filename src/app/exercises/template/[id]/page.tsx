@@ -5,7 +5,6 @@ import { useExerciseTemplateStore } from '@/store/use-exercise-template-store';
 import { ExerciseRows } from '@/app/components/exercise-groups/exercise-rows';
 import { Button } from '@/components/ui/button';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
-import { Timer } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import {
   AlertDialog,
@@ -113,51 +112,53 @@ const TemplatePage = () => {
   }
 
   return (
-    <div className="flex flex-col gap-4 p-6 font-bold">
-      <div className="flex justify-between items-center">
-        {workoutStartTime && <WorkoutTimer startTime={workoutStartTime} />}
-        <Button
-          onClick={() => handleFinishWorkout(workoutSessionId!)}
-          variant="outline"
-          className="font-bold btn-success"
-        >
-          Finish
-        </Button>
-      </div>
-      <h2 className="text-2xl font-bold">{exerciseTemplateTitle}</h2>
-      <p className="text-sm text-muted-foreground">{exerciseTemplateNotes}</p>
-      {exerciseTemplate?.map((exercise) => <ExerciseRows key={exercise.id} exercises={exercise} />)}
-      <div className="flex justify-center mb-4">
-        <Button
-          className="w-full font-bold"
-          variant="destructive"
-          onClick={() => setShowCancelDialog(true)}
-        >
-          Cancel workout
-        </Button>
-      </div>
+    <>
+      <div className="flex flex-col gap-4 p-6 font-bold">
+        <div className="flex justify-between items-center">
+          {workoutStartTime && <WorkoutTimer startTime={workoutStartTime} />}
+          <Button
+            onClick={() => handleFinishWorkout(workoutSessionId!)}
+            variant="outline"
+            className="font-bold btn-success"
+          >
+            Finish
+          </Button>
+        </div>
+        <h2 className="text-2xl font-bold">{exerciseTemplateTitle}</h2>
+        <p className="text-sm text-muted-foreground">{exerciseTemplateNotes}</p>
+        {exerciseTemplate?.map((exercise) => <ExerciseRows key={exercise.id} exercises={exercise} />)}
+        <div className="flex justify-center mb-4">
+          <Button
+            className="w-full font-bold"
+            variant="destructive"
+            onClick={() => setShowCancelDialog(true)}
+          >
+            Cancel workout
+          </Button>
+        </div>
 
-      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Cancel Workout?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to cancel this workout? This action cannot be undone. All
-              progress for this session will be lost.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Keep Working Out</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => handleCancelWorkout(workoutSessionId!)}
-            >
-              Yes, Cancel Workout
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
+        <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Cancel Workout?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to cancel this workout? This action cannot be undone. All
+                progress for this session will be lost.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Keep Working Out</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                onClick={() => handleCancelWorkout(workoutSessionId!)}
+              >
+                Yes, Cancel Workout
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    </>
   );
 };
 
