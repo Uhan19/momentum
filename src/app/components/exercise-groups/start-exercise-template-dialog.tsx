@@ -15,6 +15,8 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { formatDistanceToNow } from 'date-fns';
 import { getMuscleGroup } from '@/lib/exercise-utils';
+import { EditExerciseTemplateDialog } from '../exercise-templates/edit-exercise-template-dialog';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface WorkoutSessionStorage {
   sessionId: string;
@@ -29,6 +31,7 @@ interface StartExerciseTemplateDialogProps {
   title: string;
   notes: string;
   templateExerciseAndDefinition: TemplateExercisesWithDefinitionsArray;
+  groupId?: string;
 }
 
 export const StartExerciseTemplateDialog = ({
@@ -36,9 +39,11 @@ export const StartExerciseTemplateDialog = ({
   title,
   notes,
   templateExerciseAndDefinition,
+  groupId = '',
 }: StartExerciseTemplateDialogProps) => {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
   const [lastPerformed, setLastPerformed] = useState<string | null>(null);
   const setExerciseTemplate = useExerciseTemplateStore((state) => state.setExerciseTemplate);
   const setExerciseTemplateTitle = useExerciseTemplateStore(
@@ -151,7 +156,7 @@ export const StartExerciseTemplateDialog = ({
   };
 
   return (
-    <div>
+    <>
       <Drawer open={open} onOpenChange={setOpen}>
         <DrawerTrigger asChild>
           <Button
@@ -181,7 +186,15 @@ export const StartExerciseTemplateDialog = ({
                   <X className="h-4 w-4" />
                 </Button>
                 <h2 className="text-xl font-semibold">{title}</h2>
-                <Button variant="ghost" size="sm" className="text-orange-500 hover:text-orange-600">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="text-orange-500 hover:text-orange-600"
+                  onClick={() => {
+                    setOpen(false);
+                    setShowEditDialog(true);
+                  }}
+                >
                   Edit
                 </Button>
               </div>
@@ -248,6 +261,16 @@ export const StartExerciseTemplateDialog = ({
           </div>
         </DrawerContent>
       </Drawer>
-    </div>
+      
+      <EditExerciseTemplateDialog
+        open={showEditDialog}
+        onOpenChange={setShowEditDialog}
+        templateId={id}
+        title={title}
+        notes={notes}
+        exercises={templateExerciseAndDefinition}
+        groupId={groupId}
+      />
+    </>
   );
 };
