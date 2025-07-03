@@ -23,7 +23,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useFieldArray, useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { useSupabase } from '@/providers/supabase-provider';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
 import {
   DndContext,
   closestCenter,
@@ -81,6 +81,25 @@ export function CreateExerciseTemplateDialog({ open, onOpenChange, groupId }: Pr
   const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: 'exercises',
+  });
+
+  // Fetch available exercises
+  const { data: availableExercises = [] } = useQuery({
+    queryKey: ['exerciseDefinitions'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('exercise_definitions')
+        .select('id, name')
+        .order('name');
+
+      if (error) {
+        console.error('Error fetching exercises:', error);
+        return [];
+      }
+
+      return data || [];
+    },
+    enabled: open, // Only fetch when dialog is open
   });
 
   const sensors = useSensors(
@@ -219,7 +238,7 @@ export function CreateExerciseTemplateDialog({ open, onOpenChange, groupId }: Pr
                         key={field.id}
                         id={field.id}
                         index={index}
-                        exercises={[]}
+                        exercises={availableExercises}
                         remove={remove}
                         form={form}
                       />

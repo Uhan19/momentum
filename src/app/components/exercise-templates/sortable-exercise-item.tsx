@@ -47,7 +47,7 @@ export function SortableExerciseItem({
 }: SortableExerciseItemProps) {
   const [customExercise, setCustomExercise] = useState('')
   const exerciseValue = form.watch(`exercises.${index}.exercise_id`)
-  const selectedExercise = exercises.find((ex) => ex.id === exerciseValue)?.name || customExercise
+  const selectedExercise = exercises.find((ex) => ex.id === exerciseValue)?.name || exerciseValue || customExercise
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id,
@@ -59,11 +59,6 @@ export function SortableExerciseItem({
     zIndex: isDragging ? 1 : 0,
     opacity: isDragging ? 0.5 : 1,
   }
-
-  console.log('selectedExercise', exerciseValue)
-  console.log('exercises', exercises)
-  console.log('form', form)
-  console.log('index', index)
 
   return (
     <div
