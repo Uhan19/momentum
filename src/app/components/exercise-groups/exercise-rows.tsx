@@ -10,6 +10,12 @@ interface ExerciseRowsProps {
 export const ExerciseRows = ({ exercises }: ExerciseRowsProps) => {
   const [checkedSets, setCheckedSets] = useState<number[]>([]);
   const { sets, weight_type, exercise_definitions } = exercises;
+  
+  // Handle case where exercise_definitions is null
+  if (!exercise_definitions) {
+    return null;
+  }
+  
   const { name } = exercise_definitions;
 
   const setsArray = Array.from({ length: sets }, (set, i) => i + 1);

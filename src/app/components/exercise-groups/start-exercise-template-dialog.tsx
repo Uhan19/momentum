@@ -79,11 +79,10 @@ export const StartExerciseTemplateDialog = ({
           .eq('template_id', id)
           .eq('status', 'completed')
           .order('end_time', { ascending: false })
-          .limit(1)
-          .single();
+          .limit(1);
 
-        if (data?.end_time && !error) {
-          setLastPerformed(formatDistanceToNow(new Date(data.end_time), { addSuffix: true }));
+        if (data && data.length > 0 && data[0].end_time && !error) {
+          setLastPerformed(formatDistanceToNow(new Date(data[0].end_time), { addSuffix: true }));
         }
       } catch (err) {
         // No previous workout found, which is fine
@@ -131,15 +130,17 @@ export const StartExerciseTemplateDialog = ({
       localStorage.setItem('current_workout_session', JSON.stringify(sessionStorage));
 
       // Create the workout session exercises
-      const workoutExercises = templateExerciseAndDefinition.map((exercise) => ({
-        workout_session_id: workoutSession.id,
-        exercise_id: exercise.exercise_definitions.id,
-        planned_sets: exercise.sets,
-        planned_reps: exercise.reps,
-        is_template_exercise: true,
-        template_exercise_id: exercise.id,
-        order_index: exercise.order_index || 0,
-      }));
+      const workoutExercises = templateExerciseAndDefinition
+        .filter((exercise) => exercise.exercise_definitions?.id) // Only include exercises with valid definitions
+        .map((exercise) => ({
+          workout_session_id: workoutSession.id,
+          exercise_id: exercise.exercise_definitions.id,
+          planned_sets: exercise.sets,
+          planned_reps: exercise.reps,
+          is_template_exercise: true,
+          template_exercise_id: exercise.id,
+          order_index: exercise.order_index || 0,
+        }));
 
       const { error: exerciseError } = await supabase
         .from('workout_session_exercises')
@@ -220,8 +221,17 @@ export const StartExerciseTemplateDialog = ({
 
               {/* Exercises list */}
               <div className="space-y-4">
+                {console.log('Template exercises:', templateExerciseAndDefinition)}
                 {templateExerciseAndDefinition?.map((exercise) => {
-                  const { sets, exercise_definitions } = exercise;
+                  const { sets } = exercise;
+                  const exercise_definitions = exercise.exercise_definitions;
+                  
+                  // Skip exercises without definitions
+                  if (!exercise_definitions || !exercise_definitions.name) {
+                    console.warn('Exercise without definition found:', exercise);
+                    return null;
+                  }
+                  
                   const { name } = exercise_definitions;
                   const muscleGroup = getMuscleGroup(name);
 

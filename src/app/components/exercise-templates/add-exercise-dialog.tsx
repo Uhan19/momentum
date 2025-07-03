@@ -13,13 +13,14 @@ import {
   CommandList,
   CommandEmpty,
   CommandItem,
+  CommandGroup,
 } from '@/components/ui/command';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase';
 import { useState } from 'react';
 import { ExerciseFields, ExerciseDefinition } from '@/types';
 import { FormValues } from './create-exercise-template-dialog';
 import { UseFieldArrayReturn } from 'react-hook-form';
+import { useExercises, useCreateCustomExercise } from '@/hooks/useExercises';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface AddExerciseDialogProps {
   openAddExerciseDialog: boolean;
@@ -31,23 +32,12 @@ interface AddExerciseDialogProps {
 export const AddExerciseDialog = (props: AddExerciseDialogProps) => {
   const { fields, append, openAddExerciseDialog, setOpenAddExerciseDialog } = props;
   const [selectedExercise, setSelectedExercise] = useState<ExerciseDefinition[]>([]);
-
-  const { data: exercises = [] } = useQuery({
-    queryKey: ['exerciseDefinitions'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('exercise_definitions')
-        .select('id, name')
-        .order('name');
-
-      if (error) {
-        console.error('Error fetching exercises:', error);
-        return [];
-      }
-
-      return data || [];
-    },
-  });
+  const [searchValue, setSearchValue] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
+  
+  const { data: exercises = [] } = useExercises();
+  const createCustomExercise = useCreateCustomExercise();
+  const queryClient = useQueryClient();
 
   const handleExerciseClick = (exercise: ExerciseDefinition) => {
     if (selectedExercise.filter((element) => element.id === exercise.id).length === 0) {
@@ -58,16 +48,39 @@ export const AddExerciseDialog = (props: AddExerciseDialogProps) => {
   };
 
   const handleSaveExercise = () => {
-    selectedExercise.forEach((exercise) => {
+    selectedExercise.forEach((exercise, index) => {
       append({
         exercise_id: exercise.id,
         sets: 3,
         reps: 10,
         weight_type: 'lbs',
-        order_index: fields.length,
+        order_index: fields.length + index,
       });
     });
+    setSelectedExercise([]);
+    setSearchValue('');
     setOpenAddExerciseDialog(false);
+  };
+
+  const handleCreateCustom = async () => {
+    if (!searchValue.trim()) return;
+    
+    setIsCreating(true);
+    try {
+      const newExercise = await createCustomExercise(searchValue.trim());
+      
+      // Add to selected exercises
+      setSelectedExercise([...selectedExercise, newExercise]);
+      
+      // Invalidate queries to refetch exercises
+      await queryClient.invalidateQueries({ queryKey: ['exercises'] });
+      
+      setSearchValue('');
+    } catch (error) {
+      console.error('Failed to create custom exercise:', error);
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   return (
@@ -94,16 +107,64 @@ export const AddExerciseDialog = (props: AddExerciseDialogProps) => {
               </Button>
             </DialogTitle>
             <Command>
-              <CommandInput placeholder="Search exercises" />
+              <CommandInput 
+                placeholder="Search exercises..." 
+                value={searchValue}
+                onValueChange={setSearchValue}
+              />
               <CommandList>
-                <CommandEmpty>[Replace with component that helps add custom exercise]</CommandEmpty>
-                {exercises.map((exercise) => (
-                  <CommandItem onSelect={() => handleExerciseClick(exercise)} key={exercise.id}>
-                    <span>{exercise.name}</span>
-                    {selectedExercise.filter((element) => element.id === exercise.id).length >
-                      0 && <Check className="h-4 w-4" />}
-                  </CommandItem>
-                ))}
+                <CommandEmpty>
+                  <div className="flex flex-col items-center py-4">
+                    <p className="text-sm text-muted-foreground mb-2">
+                      No exercise found.
+                    </p>
+                    {searchValue && (
+                      <Button
+                        size="sm"
+                        onClick={handleCreateCustom}
+                        disabled={isCreating}
+                        className="gap-2"
+                      >
+                        <Plus className="h-4 w-4" />
+                        {isCreating ? 'Creating...' : `Create "${searchValue}"`}
+                      </Button>
+                    )}
+                  </div>
+                </CommandEmpty>
+                {exercises.filter(ex => !ex.isCustom).length > 0 && (
+                  <CommandGroup heading="System Exercises">
+                    {exercises
+                      .filter(ex => !ex.isCustom)
+                      .map((exercise) => (
+                        <CommandItem 
+                          onSelect={() => handleExerciseClick(exercise)} 
+                          key={exercise.id}
+                          className="flex items-center justify-between"
+                        >
+                          <span>{exercise.name}</span>
+                          {selectedExercise.some((element) => element.id === exercise.id) && 
+                            <Check className="h-4 w-4 text-primary" />}
+                        </CommandItem>
+                      ))}
+                  </CommandGroup>
+                )}
+                {exercises.filter(ex => ex.isCustom).length > 0 && (
+                  <CommandGroup heading="My Custom Exercises">
+                    {exercises
+                      .filter(ex => ex.isCustom)
+                      .map((exercise) => (
+                        <CommandItem 
+                          onSelect={() => handleExerciseClick(exercise)} 
+                          key={exercise.id}
+                          className="flex items-center justify-between"
+                        >
+                          <span>{exercise.name}</span>
+                          {selectedExercise.some((element) => element.id === exercise.id) && 
+                            <Check className="h-4 w-4 text-primary" />}
+                        </CommandItem>
+                      ))}
+                  </CommandGroup>
+                )}
               </CommandList>
             </Command>
           </DialogHeader>

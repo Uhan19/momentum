@@ -42,6 +42,7 @@ import {
 import { SortableExerciseItem } from './sortable-exercise-item';
 import { AddExerciseDialog } from './add-exercise-dialog';
 import { TemplateExercisesWithDefinitionsArray } from '@/types';
+import { useExercises } from '@/hooks/useExercises';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -80,14 +81,14 @@ type Props = {
   groupId: string;
 };
 
-export function EditExerciseTemplateDialog({ 
-  open, 
-  onOpenChange, 
+export function EditExerciseTemplateDialog({
+  open,
+  onOpenChange,
   templateId,
   title,
   notes,
   exercises,
-  groupId
+  groupId,
 }: Props) {
   const [openAddExerciseDialog, setOpenAddExerciseDialog] = useState(false);
   const [deleteConfirmIndex, setDeleteConfirmIndex] = useState<number | null>(null);
@@ -104,24 +105,8 @@ export function EditExerciseTemplateDialog({
     },
   });
 
-  // Fetch available exercises
-  const { data: availableExercises = [] } = useQuery({
-    queryKey: ['exerciseDefinitions'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('exercise_definitions')
-        .select('id, name')
-        .order('name');
-
-      if (error) {
-        console.error('Error fetching exercises:', error);
-        return [];
-      }
-
-      return data || [];
-    },
-    enabled: open, // Only fetch when dialog is open
-  });
+  // Fetch available exercises (both system and custom)
+  const { data: availableExercises = [] } = useExercises();
 
   // Initialize form with existing data
   useEffect(() => {
@@ -193,39 +178,53 @@ export function EditExerciseTemplateDialog({
 
       // Delete removed exercises
       if (exercisesToDelete.length > 0) {
-        const { error: deleteError } = await supabase
-          .from('template_exercises')
-          .delete()
-          .in('id', exercisesToDelete);
+        // First check if any of these exercises are being used in workout sessions
+        const { data: usedExercises, error: checkError } = await supabase
+          .from('workout_session_exercises')
+          .select('template_exercise_id')
+          .in('template_exercise_id', exercisesToDelete);
 
-        if (deleteError) throw deleteError;
+        if (checkError) throw checkError;
+
+        if (usedExercises && usedExercises.length > 0) {
+          // Some exercises are in use, we can't delete them
+          // Instead, we'll just update the template without deleting
+          console.warn('Cannot delete exercises that are being used in workout sessions');
+          alert('Some exercises cannot be deleted because they are being used in workout sessions.');
+          // Clear the delete list for these exercises
+          const usedIds = usedExercises.map(e => e.template_exercise_id);
+          setExercisesToDelete(exercisesToDelete.filter(id => !usedIds.includes(id)));
+        } else {
+          // Safe to delete
+          const { error: deleteError } = await supabase
+            .from('template_exercises')
+            .delete()
+            .in('id', exercisesToDelete);
+
+          if (deleteError) throw deleteError;
+        }
       }
 
       // Update existing and create new exercises
-      const existingExercises = values.exercises.filter(ex => ex.id);
-      const newExercises = values.exercises.filter(ex => !ex.id);
+      const existingExercises = values.exercises.filter((ex) => ex.id);
+      const newExercises = values.exercises.filter((ex) => !ex.id);
 
       // Update existing exercises
       for (const exercise of existingExercises) {
         const { id, ...updateData } = exercise;
-        const { error } = await supabase
-          .from('template_exercises')
-          .update(updateData)
-          .eq('id', id);
+        const { error } = await supabase.from('template_exercises').update(updateData).eq('id', id);
 
         if (error) throw error;
       }
 
       // Create new exercises
       if (newExercises.length > 0) {
-        const { error } = await supabase
-          .from('template_exercises')
-          .insert(
-            newExercises.map(exercise => ({
-              template_id: templateId,
-              ...exercise,
-            }))
-          );
+        const { error } = await supabase.from('template_exercises').insert(
+          newExercises.map((exercise) => ({
+            template_id: templateId,
+            ...exercise,
+          })),
+        );
 
         if (error) throw error;
       }
@@ -334,12 +333,16 @@ export function EditExerciseTemplateDialog({
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={deleteConfirmIndex !== null} onOpenChange={() => setDeleteConfirmIndex(null)}>
+      <AlertDialog
+        open={deleteConfirmIndex !== null}
+        onOpenChange={() => setDeleteConfirmIndex(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Exercise?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to remove this exercise from the template? This action cannot be undone.
+              Are you sure you want to remove this exercise from the template? This action cannot be
+              undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

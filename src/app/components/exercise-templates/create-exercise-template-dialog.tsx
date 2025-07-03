@@ -41,6 +41,7 @@ import {
 } from '@dnd-kit/sortable';
 import { SortableExerciseItem } from './sortable-exercise-item';
 import { AddExerciseDialog } from './add-exercise-dialog';
+import { useExercises } from '@/hooks/useExercises';
 
 const formSchema = z.object({
   title: z.string().min(1, 'Title is required').max(255, 'Title is too long'),
@@ -83,24 +84,8 @@ export function CreateExerciseTemplateDialog({ open, onOpenChange, groupId }: Pr
     name: 'exercises',
   });
 
-  // Fetch available exercises
-  const { data: availableExercises = [] } = useQuery({
-    queryKey: ['exerciseDefinitions'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('exercise_definitions')
-        .select('id, name')
-        .order('name');
-
-      if (error) {
-        console.error('Error fetching exercises:', error);
-        return [];
-      }
-
-      return data || [];
-    },
-    enabled: open, // Only fetch when dialog is open
-  });
+  // Fetch available exercises (both system and custom)
+  const { data: availableExercises = [] } = useExercises();
 
   const sensors = useSensors(
     useSensor(PointerSensor),
