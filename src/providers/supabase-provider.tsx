@@ -4,10 +4,9 @@ import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useRouter } from 'next/navigation';
 import { createContext, useContext, useEffect, useState } from 'react';
 import type { SupabaseClient, User } from '@supabase/auth-helpers-nextjs';
-import type { Database } from '@/lib/database.types';
 
 type SupabaseContext = {
-  supabase: SupabaseClient<Database>;
+  supabase: SupabaseClient;
   user: User | null;
 };
 

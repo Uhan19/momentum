@@ -23,7 +23,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useFieldArray, useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { useSupabase } from '@/providers/supabase-provider';
-import { useQueryClient, useQuery } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   DndContext,
   closestCenter,
@@ -93,6 +93,7 @@ export function EditExerciseTemplateDialog({
   const [openAddExerciseDialog, setOpenAddExerciseDialog] = useState(false);
   const [deleteConfirmIndex, setDeleteConfirmIndex] = useState<number | null>(null);
   const [exercisesToDelete, setExercisesToDelete] = useState<string[]>([]);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const { supabase } = useSupabase();
   const queryClient = useQueryClient();
 
@@ -164,6 +165,7 @@ export function EditExerciseTemplateDialog({
   };
 
   async function onSubmit(values: FormValues) {
+    setSubmitError(null);
     try {
       // Update the template
       const { error: templateError } = await supabase
@@ -233,8 +235,8 @@ export function EditExerciseTemplateDialog({
 
       onOpenChange(false);
       setExercisesToDelete([]);
-    } catch (error) {
-      console.error('Error updating template:', error);
+    } catch {
+      setSubmitError('Failed to save changes. Please try again.');
     }
   }
 
@@ -289,12 +291,15 @@ export function EditExerciseTemplateDialog({
                 </div>
 
                 {/* Column Headers - Only show on desktop */}
-                <div className="hidden sm:flex gap-4 px-4 text-sm font-medium text-muted-foreground">
+                <div className="hidden sm:flex items-center gap-4 px-3 text-xs font-medium text-muted-foreground/70 uppercase tracking-wider">
                   <div className="w-8"></div>
                   <div className="flex-1">Exercise</div>
-                  <div className="w-20 text-center">Sets</div>
-                  <div className="w-20 text-center">Reps</div>
-                  <div className="w-24 text-center">Unit</div>
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <div className="w-20 text-center">Sets</div>
+                    <div className="w-4"></div>
+                    <div className="w-20 text-center">Reps</div>
+                    <div className="w-24 text-center">Unit</div>
+                  </div>
                   <div className="w-8"></div>
                 </div>
 
@@ -307,21 +312,29 @@ export function EditExerciseTemplateDialog({
                     items={fields.map((field) => field.id)}
                     strategy={verticalListSortingStrategy}
                   >
-                    <div className="space-y-4">
+                    <div className="space-y-0">
                       {fields.map((field, index) => (
-                        <SortableExerciseItem
-                          key={field.id}
-                          id={field.id}
-                          index={index}
-                          exercises={availableExercises}
-                          remove={(idx) => setDeleteConfirmIndex(idx)}
-                          form={form}
-                        />
+                        <div key={field.id}>
+                          <SortableExerciseItem
+                            id={field.id}
+                            index={index}
+                            exercises={availableExercises}
+                            remove={(idx) => setDeleteConfirmIndex(idx)}
+                            form={form}
+                          />
+                          {index < fields.length - 1 && (
+                            <div className="h-px bg-border/50 mx-4" />
+                          )}
+                        </div>
                       ))}
                     </div>
                   </SortableContext>
                 </DndContext>
               </div>
+
+              {submitError && (
+                <p className="text-sm text-destructive">{submitError}</p>
+              )}
 
               <DialogFooter className="sm:justify-end">
                 <Button type="submit" className="w-full sm:w-auto">

@@ -12,11 +12,17 @@ import { Dumbbell, Play, X, HelpCircle } from 'lucide-react';
 import { TemplateExercisesWithDefinitionsArray } from '@/types';
 import { useExerciseTemplateStore } from '@/store/use-exercise-template-store';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import { useSupabase } from '@/providers/supabase-provider';
 import { formatDistanceToNow } from 'date-fns';
 import { getMuscleGroup } from '@/lib/exercise-utils';
 import { EditExerciseTemplateDialog } from '../exercise-templates/edit-exercise-template-dialog';
-import { useQueryClient } from '@tanstack/react-query';
+
+interface OriginalExerciseSnapshot {
+  exerciseDefId: string;
+  sets: number;
+  reps: number | null;
+  weight_type: string | null;
+}
 
 interface WorkoutSessionStorage {
   sessionId: string;
@@ -24,6 +30,7 @@ interface WorkoutSessionStorage {
   startTime: string;
   // TODO: Add `pause` later
   status: 'in_progress';
+  originalExercises: OriginalExerciseSnapshot[];
 }
 
 interface StartExerciseTemplateDialogProps {
@@ -42,9 +49,11 @@ export const StartExerciseTemplateDialog = ({
   groupId = '',
 }: StartExerciseTemplateDialogProps) => {
   const router = useRouter();
+  const { supabase, user } = useSupabase();
   const [open, setOpen] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [lastPerformed, setLastPerformed] = useState<string | null>(null);
+  const [startError, setStartError] = useState<string | null>(null);
   const setExerciseTemplate = useExerciseTemplateStore((state) => state.setExerciseTemplate);
   const setExerciseTemplateTitle = useExerciseTemplateStore(
     (state) => state.setExerciseTemplateTitle,
@@ -96,6 +105,7 @@ export const StartExerciseTemplateDialog = ({
   }, [open, id]);
 
   const handleStartWorkout = async () => {
+    setStartError(null);
     try {
       // Check if there's an existing workout session for this template
       const existingSession = localStorage.getItem('current_workout_session');
@@ -111,6 +121,7 @@ export const StartExerciseTemplateDialog = ({
         .from('workout_sessions')
         .insert({
           template_id: id,
+          user_id: user?.id,
           status: 'in_progress',
         })
         .select()
@@ -120,26 +131,18 @@ export const StartExerciseTemplateDialog = ({
         throw sessionError;
       }
 
-      // Save the workout session to local storage
-      const sessionStorage: WorkoutSessionStorage = {
-        sessionId: workoutSession.id,
-        templateId: id,
-        startTime: new Date().toISOString(),
-        status: 'in_progress',
-      };
-      localStorage.setItem('current_workout_session', JSON.stringify(sessionStorage));
-
       // Create the workout session exercises
       const workoutExercises = templateExerciseAndDefinition
-        .filter((exercise) => exercise.exercise_definitions?.id) // Only include exercises with valid definitions
+        .filter((exercise) => exercise.exercise_definitions?.id)
         .map((exercise) => ({
           workout_session_id: workoutSession.id,
           exercise_id: exercise.exercise_definitions.id,
           planned_sets: exercise.sets,
           planned_reps: exercise.reps,
+          weight_type: exercise.weight_type,
+          order_index: exercise.order_index || 0,
           is_template_exercise: true,
           template_exercise_id: exercise.id,
-          order_index: exercise.order_index || 0,
         }));
 
       const { error: exerciseError } = await supabase
@@ -147,12 +150,33 @@ export const StartExerciseTemplateDialog = ({
         .insert(workoutExercises);
 
       if (exerciseError) {
+        // Clean up orphaned session
+        await supabase.from('workout_sessions').delete().eq('id', workoutSession.id);
         throw exerciseError;
       }
 
+      // Only save to localStorage after all DB operations succeed
+      const originalExercises: OriginalExerciseSnapshot[] = templateExerciseAndDefinition
+        .filter((ex) => ex.exercise_definitions?.id)
+        .map((ex) => ({
+          exerciseDefId: ex.exercise_definitions.id,
+          sets: ex.sets,
+          reps: ex.reps,
+          weight_type: ex.weight_type,
+        }));
+
+      const sessionStorage: WorkoutSessionStorage = {
+        sessionId: workoutSession.id,
+        templateId: id,
+        startTime: new Date().toISOString(),
+        status: 'in_progress',
+        originalExercises,
+      };
+      localStorage.setItem('current_workout_session', JSON.stringify(sessionStorage));
+
       router.push(`/exercises/template/${id}?session=${workoutSession.id}`);
-    } catch (error) {
-      console.error('Error starting workout', error);
+    } catch {
+      setStartError('Failed to start workout. Please try again.');
     }
   };
 
@@ -187,9 +211,9 @@ export const StartExerciseTemplateDialog = ({
                   <X className="h-4 w-4" />
                 </Button>
                 <h2 className="text-xl font-semibold">{title}</h2>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
+                <Button
+                  variant="ghost"
+                  size="sm"
                   className="text-orange-500 hover:text-orange-600"
                   onClick={() => {
                     setOpen(false);
@@ -221,17 +245,16 @@ export const StartExerciseTemplateDialog = ({
 
               {/* Exercises list */}
               <div className="space-y-4">
-                {console.log('Template exercises:', templateExerciseAndDefinition)}
                 {templateExerciseAndDefinition?.map((exercise) => {
                   const { sets } = exercise;
                   const exercise_definitions = exercise.exercise_definitions;
-                  
+
                   // Skip exercises without definitions
                   if (!exercise_definitions || !exercise_definitions.name) {
                     console.warn('Exercise without definition found:', exercise);
                     return null;
                   }
-                  
+
                   const { name } = exercise_definitions;
                   const muscleGroup = getMuscleGroup(name);
 
@@ -260,6 +283,9 @@ export const StartExerciseTemplateDialog = ({
               </div>
 
               {/* Start workout button */}
+              {startError && (
+                <p className="text-sm text-destructive text-center">{startError}</p>
+              )}
               <Button
                 className="w-full mt-4 btn-success"
                 variant="secondary"
@@ -271,7 +297,7 @@ export const StartExerciseTemplateDialog = ({
           </div>
         </DrawerContent>
       </Drawer>
-      
+
       <EditExerciseTemplateDialog
         open={showEditDialog}
         onOpenChange={setShowEditDialog}

@@ -6,7 +6,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Check, Plus, Save } from 'lucide-react';
+import { Check, Plus } from 'lucide-react';
 import {
   Command,
   CommandInput,
@@ -16,10 +16,10 @@ import {
   CommandGroup,
 } from '@/components/ui/command';
 import { useState } from 'react';
-import { ExerciseFields, ExerciseDefinition } from '@/types';
+import { ExerciseFields } from '@/types';
 import { FormValues } from './create-exercise-template-dialog';
 import { UseFieldArrayReturn } from 'react-hook-form';
-import { useExercises, useCreateCustomExercise } from '@/hooks/useExercises';
+import { useExercises, useCreateCustomExercise, Exercise } from '@/hooks/useExercises';
 import { useQueryClient } from '@tanstack/react-query';
 
 interface AddExerciseDialogProps {
@@ -31,15 +31,16 @@ interface AddExerciseDialogProps {
 
 export const AddExerciseDialog = (props: AddExerciseDialogProps) => {
   const { fields, append, openAddExerciseDialog, setOpenAddExerciseDialog } = props;
-  const [selectedExercise, setSelectedExercise] = useState<ExerciseDefinition[]>([]);
+  const [selectedExercise, setSelectedExercise] = useState<Exercise[]>([]);
   const [searchValue, setSearchValue] = useState('');
   const [isCreating, setIsCreating] = useState(false);
-  
+  const [createError, setCreateError] = useState<string | null>(null);
+
   const { data: exercises = [] } = useExercises();
   const createCustomExercise = useCreateCustomExercise();
   const queryClient = useQueryClient();
 
-  const handleExerciseClick = (exercise: ExerciseDefinition) => {
+  const handleExerciseClick = (exercise: Exercise) => {
     if (selectedExercise.filter((element) => element.id === exercise.id).length === 0) {
       setSelectedExercise([...selectedExercise, exercise]);
     } else {
@@ -64,20 +65,27 @@ export const AddExerciseDialog = (props: AddExerciseDialogProps) => {
 
   const handleCreateCustom = async () => {
     if (!searchValue.trim()) return;
-    
+
     setIsCreating(true);
+    setCreateError(null);
     try {
-      const newExercise = await createCustomExercise(searchValue.trim());
-      
+      const data = await createCustomExercise(searchValue.trim());
+      const newExercise: Exercise = {
+        id: data.id,
+        name: data.name,
+        description: data.description,
+        isCustom: true,
+      };
+
       // Add to selected exercises
       setSelectedExercise([...selectedExercise, newExercise]);
-      
+
       // Invalidate queries to refetch exercises
       await queryClient.invalidateQueries({ queryKey: ['exercises'] });
-      
+
       setSearchValue('');
-    } catch (error) {
-      console.error('Failed to create custom exercise:', error);
+    } catch {
+      setCreateError('Failed to create exercise. Please try again.');
     } finally {
       setIsCreating(false);
     }
@@ -87,8 +95,8 @@ export const AddExerciseDialog = (props: AddExerciseDialogProps) => {
     <div>
       <Dialog open={openAddExerciseDialog} onOpenChange={setOpenAddExerciseDialog}>
         <DialogTrigger asChild>
-          <Button variant="outline">
-            <Plus className="h-4 w-4" />
+          <Button variant="ghost" size="sm" className="h-8 text-muted-foreground hover:text-foreground">
+            <Plus className="h-4 w-4 mr-2" />
             Add exercise
           </Button>
         </DialogTrigger>
@@ -97,22 +105,24 @@ export const AddExerciseDialog = (props: AddExerciseDialogProps) => {
             <DialogTitle className="flex items-center justify-between">
               <span>Choose your exercise</span>
               <Button
-                variant="outline"
-                size="icon"
+                variant="ghost"
+                size="sm"
                 onClick={handleSaveExercise}
                 disabled={selectedExercise.length === 0}
-                className="disabled:cursor-not-allowed enabled:cursor-pointer enabled:text-green-300 mr-4 enabled:border-green-300"
+                className="disabled:opacity-50 disabled:cursor-not-allowed text-primary hover:text-primary/80"
               >
-                <Save className="h-4 w-4" />
+                <Check className="h-4 w-4 mr-2" />
+                Add {selectedExercise.length > 0 && `(${selectedExercise.length})`}
               </Button>
             </DialogTitle>
-            <Command>
-              <CommandInput 
-                placeholder="Search exercises..." 
+            <Command className="border-0">
+              <CommandInput
+                placeholder="Search exercises..."
                 value={searchValue}
                 onValueChange={setSearchValue}
+                // className="border-b"
               />
-              <CommandList>
+              <CommandList className="max-h-[400px]">
                 <CommandEmpty>
                   <div className="flex flex-col items-center py-4">
                     <p className="text-sm text-muted-foreground mb-2">
@@ -129,6 +139,9 @@ export const AddExerciseDialog = (props: AddExerciseDialogProps) => {
                         {isCreating ? 'Creating...' : `Create "${searchValue}"`}
                       </Button>
                     )}
+                    {createError && (
+                      <p className="text-sm text-destructive mt-2">{createError}</p>
+                    )}
                   </div>
                 </CommandEmpty>
                 {exercises.filter(ex => !ex.isCustom).length > 0 && (
@@ -136,14 +149,20 @@ export const AddExerciseDialog = (props: AddExerciseDialogProps) => {
                     {exercises
                       .filter(ex => !ex.isCustom)
                       .map((exercise) => (
-                        <CommandItem 
-                          onSelect={() => handleExerciseClick(exercise)} 
+                        <CommandItem
+                          onSelect={() => handleExerciseClick(exercise)}
                           key={exercise.id}
-                          className="flex items-center justify-between"
+                          className="flex items-center justify-between py-3 px-3 rounded-md data-[selected=true]:bg-muted"
                         >
-                          <span>{exercise.name}</span>
-                          {selectedExercise.some((element) => element.id === exercise.id) && 
-                            <Check className="h-4 w-4 text-primary" />}
+                          <span className="text-sm">{exercise.name}</span>
+                          <div className={`h-4 w-4 rounded-sm border flex items-center justify-center ${
+                            selectedExercise.some((element) => element.id === exercise.id)
+                              ? 'bg-primary border-primary'
+                              : 'border-muted-foreground/50'
+                          }`}>
+                            {selectedExercise.some((element) => element.id === exercise.id) &&
+                              <Check className="h-3 w-3 text-primary-foreground" />}
+                          </div>
                         </CommandItem>
                       ))}
                   </CommandGroup>
@@ -153,14 +172,20 @@ export const AddExerciseDialog = (props: AddExerciseDialogProps) => {
                     {exercises
                       .filter(ex => ex.isCustom)
                       .map((exercise) => (
-                        <CommandItem 
-                          onSelect={() => handleExerciseClick(exercise)} 
+                        <CommandItem
+                          onSelect={() => handleExerciseClick(exercise)}
                           key={exercise.id}
-                          className="flex items-center justify-between"
+                          className="flex items-center justify-between py-3 px-3 rounded-md data-[selected=true]:bg-muted"
                         >
-                          <span>{exercise.name}</span>
-                          {selectedExercise.some((element) => element.id === exercise.id) && 
-                            <Check className="h-4 w-4 text-primary" />}
+                          <span className="text-sm">{exercise.name}</span>
+                          <div className={`h-4 w-4 rounded-sm border flex items-center justify-center ${
+                            selectedExercise.some((element) => element.id === exercise.id)
+                              ? 'bg-primary border-primary'
+                              : 'border-muted-foreground/50'
+                          }`}>
+                            {selectedExercise.some((element) => element.id === exercise.id) &&
+                              <Check className="h-3 w-3 text-primary-foreground" />}
+                          </div>
                         </CommandItem>
                       ))}
                   </CommandGroup>
