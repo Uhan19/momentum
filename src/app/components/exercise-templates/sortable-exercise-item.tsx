@@ -3,7 +3,6 @@ import { useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
 import {
   Command,
   CommandEmpty,
@@ -62,6 +61,7 @@ export function SortableExerciseItem({
   const [open, setOpen] = useState(false)
   const [searchValue, setSearchValue] = useState('')
   const [isCreating, setIsCreating] = useState(false)
+  const [createError, setCreateError] = useState<string | null>(null)
   const createCustomExercise = useCreateCustomExercise()
   const queryClient = useQueryClient()
 
@@ -83,6 +83,7 @@ export function SortableExerciseItem({
     if (!searchValue.trim()) return
 
     setIsCreating(true)
+    setCreateError(null)
     try {
       const newExercise = await createCustomExercise(searchValue.trim())
 
@@ -95,8 +96,8 @@ export function SortableExerciseItem({
 
       setSearchValue('')
       setOpen(false)
-    } catch (error) {
-      console.error('Failed to create custom exercise:', error)
+    } catch {
+      setCreateError('Failed to create exercise. Please try again.')
     } finally {
       setIsCreating(false)
     }
@@ -106,19 +107,19 @@ export function SortableExerciseItem({
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex flex-col gap-4 bg-background p-4 rounded-md border ${
-        isDragging ? 'border-primary' : ''
-      } sm:flex-row sm:items-center`}
+      className={`relative flex flex-col gap-3 py-3 ${
+        isDragging ? 'bg-muted/50' : ''
+      } sm:flex-row sm:items-center sm:gap-4 group`}
     >
       <Button
         type="button"
         variant="ghost"
         size="icon"
-        className="cursor-grab hidden sm:flex"
+        className="cursor-grab hidden sm:flex opacity-0 group-hover:opacity-100 transition-opacity"
         {...attributes}
         {...listeners}
       >
-        <GripVertical className="h-4 w-4" />
+        <GripVertical className="h-4 w-4 text-muted-foreground" />
       </Button>
 
       <FormField
@@ -126,19 +127,21 @@ export function SortableExerciseItem({
         name={`exercises.${index}.exercise_id`}
         render={({ field }) => (
           <FormItem className="flex-1">
-            <FormLabel className="sm:hidden">Exercise</FormLabel>
             <Popover open={open} onOpenChange={setOpen}>
               <PopoverTrigger asChild>
                 <FormControl>
-                  <Button
-                    variant="outline"
+                  <div
                     role="combobox"
+                    aria-label="Select exercise"
+                    aria-controls="exercise-select-list"
                     aria-expanded={open}
-                    className="w-full justify-between font-normal"
+                    className="w-full flex items-center justify-between px-3 py-2 text-sm bg-muted/50 rounded-md hover:bg-muted transition-colors cursor-pointer"
                   >
-                    {selectedExercise?.name || 'Select exercise'}
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
+                    <span className={selectedExercise ? '' : 'text-muted-foreground'}>
+                      {selectedExercise?.name || 'Select exercise'}
+                    </span>
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 text-muted-foreground" />
+                  </div>
                 </FormControl>
               </PopoverTrigger>
               <PopoverContent className="w-full p-0" align="start">
@@ -164,6 +167,9 @@ export function SortableExerciseItem({
                             <Plus className="h-4 w-4" />
                             {isCreating ? 'Creating...' : `Create "${searchValue}"`}
                           </Button>
+                        )}
+                        {createError && (
+                          <p className="text-sm text-destructive mt-2">{createError}</p>
                         )}
                       </div>
                     </CommandEmpty>
@@ -230,29 +236,41 @@ export function SortableExerciseItem({
         )}
       />
 
-      <div className="grid grid-cols-3 gap-4 sm:flex sm:gap-4">
+      <div className="flex items-center gap-2 sm:gap-3">
         <FormField
           control={form.control}
           name={`exercises.${index}.sets`}
           render={({ field }) => (
-            <FormItem className="w-full sm:w-20">
-              <FormLabel className="sm:hidden">Sets</FormLabel>
+            <FormItem className="w-16 sm:w-20">
+              <FormLabel className="sr-only">Sets</FormLabel>
               <FormControl>
-                <Input type="number" placeholder="Sets" {...field} />
+                <input
+                  type="number"
+                  placeholder="Sets"
+                  className="w-full px-2 py-1.5 text-sm text-center bg-muted/50 rounded-md focus:bg-muted focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 transition-colors"
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
 
+        <span className="text-muted-foreground text-sm">×</span>
+
         <FormField
           control={form.control}
           name={`exercises.${index}.reps`}
           render={({ field }) => (
-            <FormItem className="w-full sm:w-20">
-              <FormLabel className="sm:hidden">Reps</FormLabel>
+            <FormItem className="w-16 sm:w-20">
+              <FormLabel className="sr-only">Reps</FormLabel>
               <FormControl>
-                <Input type="number" placeholder="Reps" {...field} />
+                <input
+                  type="number"
+                  placeholder="Reps"
+                  className="w-full px-2 py-1.5 text-sm text-center bg-muted/50 rounded-md focus:bg-muted focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 transition-colors"
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -263,11 +281,11 @@ export function SortableExerciseItem({
           control={form.control}
           name={`exercises.${index}.weight_type`}
           render={({ field }) => (
-            <FormItem className="w-full sm:w-24">
-              <FormLabel className="sm:hidden">Unit</FormLabel>
+            <FormItem className="w-20 sm:w-24">
+              <FormLabel className="sr-only">Unit</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
-                  <SelectTrigger>
+                  <SelectTrigger className="border-0 bg-muted/50 hover:bg-muted h-8">
                     <SelectValue placeholder="Unit" />
                   </SelectTrigger>
                 </FormControl>
@@ -287,9 +305,9 @@ export function SortableExerciseItem({
         variant="ghost"
         size="icon"
         onClick={() => remove(index)}
-        className="self-end sm:self-center"
+        className="self-end sm:self-center opacity-0 group-hover:opacity-100 transition-opacity"
       >
-        <X className="h-4 w-4" />
+        <X className="h-4 w-4 text-muted-foreground" />
       </Button>
     </div>
   )

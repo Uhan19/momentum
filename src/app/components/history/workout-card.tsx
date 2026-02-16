@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { WorkoutSessionWithDetails, BestSet } from '@/types';
 import { format, differenceInMinutes } from 'date-fns';
 import { MoreHorizontal } from 'lucide-react';
@@ -13,6 +14,18 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { useSupabase } from '@/providers/supabase-provider';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface WorkoutCardProps {
   workout: WorkoutSessionWithDetails;
@@ -20,6 +33,10 @@ interface WorkoutCardProps {
 
 export function WorkoutCard({ workout }: WorkoutCardProps) {
   const { exercise_templates, workout_session_exercises, start_time, end_time } = workout;
+  const { supabase } = useSupabase();
+  const queryClient = useQueryClient();
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // Calculate duration
   const duration =
@@ -27,7 +44,7 @@ export function WorkoutCard({ workout }: WorkoutCardProps) {
 
   // Calculate total weight lifted
   const totalWeight = workout_session_exercises.reduce((total, exercise) => {
-    const exerciseWeight = exercise.exercise_sets.reduce((sum, set) => {
+    const exerciseWeight = exercise.exercise_sets.reduce((sum, set) => { // exercise_sets is empty here
       if (set.completed && set.weight && set.reps) {
         return sum + set.weight * set.reps;
       }
@@ -60,6 +77,38 @@ export function WorkoutCard({ workout }: WorkoutCardProps) {
     return bestSet;
   };
 
+  const handleDelete = async () => {
+    setDeleteError(null);
+    try {
+      // Delete exercise_sets first, then workout_session_exercises, then the session
+      const { error: setsError } = await supabase
+        .from('exercise_sets')
+        .delete()
+        .eq('workout_session_id', workout.id);
+
+      if (setsError) throw setsError;
+
+      const { error: exercisesError } = await supabase
+        .from('workout_session_exercises')
+        .delete()
+        .eq('workout_session_id', workout.id);
+
+      if (exercisesError) throw exercisesError;
+
+      const { error: sessionError } = await supabase
+        .from('workout_sessions')
+        .delete()
+        .eq('id', workout.id);
+
+      if (sessionError) throw sessionError;
+
+      await queryClient.invalidateQueries({ queryKey: ['history'] });
+      setShowDeleteDialog(false);
+    } catch {
+      setDeleteError('Failed to delete workout. Please try again.');
+    }
+  };
+
   // Format date
   const workoutDate = start_time ? new Date(start_time) : new Date();
   const formattedDate = format(workoutDate, 'EEEE, MMM d');
@@ -79,9 +128,12 @@ export function WorkoutCard({ workout }: WorkoutCardProps) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem>View Details</DropdownMenuItem>
-              <DropdownMenuItem>Edit Workout</DropdownMenuItem>
-              <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-destructive"
+                onClick={() => setShowDeleteDialog(true)}
+              >
+                Delete
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -109,6 +161,29 @@ export function WorkoutCard({ workout }: WorkoutCardProps) {
             })}
         </div>
       </CardContent>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent className="w-5/6 bg-popover border-none rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Workout?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete this workout and all its data. This action cannot be undone.
+            </AlertDialogDescription>
+            {deleteError && (
+              <p className="text-sm text-destructive mt-2">{deleteError}</p>
+            )}
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={handleDelete}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }

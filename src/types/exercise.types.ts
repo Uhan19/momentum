@@ -50,3 +50,9 @@ export interface BestSet {
 }
 
 export type WorkoutStatus = 'in_progress' | 'completed' | 'cancelled';
+
+export interface SetData {
+  weight: number;
+  reps: number;
+  completed: boolean;
+}

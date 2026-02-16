@@ -41,6 +41,7 @@ type ExerciseGroup = {
 export function ExerciseGroupsList() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [groupToDelete, setGroupToDelete] = useState<ExerciseGroup | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const { supabase } = useSupabase();
   const queryClient = useQueryClient();
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
@@ -62,6 +63,7 @@ export function ExerciseGroupsList() {
 
   const handleDelete = async () => {
     if (!groupToDelete) return;
+    setDeleteError(null);
 
     try {
       const { error } = await supabase.from('exercise_groups').delete().eq('id', groupToDelete.id);
@@ -70,8 +72,8 @@ export function ExerciseGroupsList() {
 
       await queryClient.invalidateQueries({ queryKey: ['exerciseGroups'] });
       setGroupToDelete(null);
-    } catch (error) {
-      console.error('Error deleting exercise group:', error);
+    } catch {
+      setDeleteError('Failed to delete group. It may still have templates.');
     }
   };
 
@@ -152,6 +154,9 @@ export function ExerciseGroupsList() {
               This will permanently delete the exercise group &quot;{groupToDelete?.name}&quot; and
               all its exercises. This action cannot be undone.
             </AlertDialogDescription>
+            {deleteError && (
+              <p className="text-sm text-destructive mt-2">{deleteError}</p>
+            )}
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
