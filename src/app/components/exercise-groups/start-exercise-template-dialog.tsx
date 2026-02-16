@@ -1,23 +1,44 @@
 import {
-  Dialog,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogTrigger,
-  DialogContent,
-} from '@/components/ui/dialog';
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerDescription,
+  DrawerTrigger,
+} from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { useEffect, useState } from 'react';
-import { Dumbbell, Play } from 'lucide-react';
+import { Dumbbell, Play, X, HelpCircle } from 'lucide-react';
 import { TemplateExercisesWithDefinitionsArray } from '@/types';
 import { useExerciseTemplateStore } from '@/store/use-exercise-template-store';
 import { useRouter } from 'next/navigation';
+import { useSupabase } from '@/providers/supabase-provider';
+import { formatDistanceToNow } from 'date-fns';
+import { getMuscleGroup } from '@/lib/exercise-utils';
+import { EditExerciseTemplateDialog } from '../exercise-templates/edit-exercise-template-dialog';
+
+interface OriginalExerciseSnapshot {
+  exerciseDefId: string;
+  sets: number;
+  reps: number | null;
+  weight_type: string | null;
+}
+
+interface WorkoutSessionStorage {
+  sessionId: string;
+  templateId: string;
+  startTime: string;
+  // TODO: Add `pause` later
+  status: 'in_progress';
+  originalExercises: OriginalExerciseSnapshot[];
+}
 
 interface StartExerciseTemplateDialogProps {
   id: string;
   title: string;
   notes: string;
   templateExerciseAndDefinition: TemplateExercisesWithDefinitionsArray;
+  groupId?: string;
 }
 
 export const StartExerciseTemplateDialog = ({
@@ -25,61 +46,267 @@ export const StartExerciseTemplateDialog = ({
   title,
   notes,
   templateExerciseAndDefinition,
+  groupId = '',
 }: StartExerciseTemplateDialogProps) => {
   const router = useRouter();
+  const { supabase, user } = useSupabase();
   const [open, setOpen] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [lastPerformed, setLastPerformed] = useState<string | null>(null);
+  const [startError, setStartError] = useState<string | null>(null);
   const setExerciseTemplate = useExerciseTemplateStore((state) => state.setExerciseTemplate);
+  const setExerciseTemplateTitle = useExerciseTemplateStore(
+    (state) => state.setExerciseTemplateTitle,
+  );
+  const setExerciseTemplateNotes = useExerciseTemplateStore(
+    (state) => state.setExerciseTemplateNotes,
+  );
 
   useEffect(() => {
     if (templateExerciseAndDefinition) {
       setExerciseTemplate(id, templateExerciseAndDefinition);
+      setExerciseTemplateTitle(title);
+      setExerciseTemplateNotes(notes);
     }
-  }, [setExerciseTemplate, templateExerciseAndDefinition, id]);
+  }, [
+    setExerciseTemplate,
+    setExerciseTemplateTitle,
+    setExerciseTemplateNotes,
+    templateExerciseAndDefinition,
+    id,
+    title,
+    notes,
+  ]);
 
-  console.log('templateExerciseAndDefinition', templateExerciseAndDefinition);
+  // Fetch last performed date
+  useEffect(() => {
+    const fetchLastPerformed = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('workout_sessions')
+          .select('end_time')
+          .eq('template_id', id)
+          .eq('status', 'completed')
+          .order('end_time', { ascending: false })
+          .limit(1);
+
+        if (data && data.length > 0 && data[0].end_time && !error) {
+          setLastPerformed(formatDistanceToNow(new Date(data[0].end_time), { addSuffix: true }));
+        }
+      } catch (err) {
+        // No previous workout found, which is fine
+        console.error(err);
+      }
+    };
+
+    if (open && id) {
+      fetchLastPerformed();
+    }
+  }, [open, id]);
+
+  const handleStartWorkout = async () => {
+    setStartError(null);
+    try {
+      // Check if there's an existing workout session for this template
+      const existingSession = localStorage.getItem('current_workout_session');
+      if (existingSession) {
+        const session = JSON.parse(existingSession) as WorkoutSessionStorage;
+        // Redirect to existing session
+        router.push(`/exercises/template/${session.templateId}?session=${session.sessionId}`);
+        return;
+      }
+
+      // Create the workout session
+      const { data: workoutSession, error: sessionError } = await supabase
+        .from('workout_sessions')
+        .insert({
+          template_id: id,
+          user_id: user?.id,
+          status: 'in_progress',
+        })
+        .select()
+        .single();
+
+      if (sessionError) {
+        throw sessionError;
+      }
+
+      // Create the workout session exercises
+      const workoutExercises = templateExerciseAndDefinition
+        .filter((exercise) => exercise.exercise_definitions?.id)
+        .map((exercise) => ({
+          workout_session_id: workoutSession.id,
+          exercise_id: exercise.exercise_definitions.id,
+          planned_sets: exercise.sets,
+          planned_reps: exercise.reps,
+          weight_type: exercise.weight_type,
+          order_index: exercise.order_index || 0,
+          is_template_exercise: true,
+          template_exercise_id: exercise.id,
+        }));
+
+      const { error: exerciseError } = await supabase
+        .from('workout_session_exercises')
+        .insert(workoutExercises);
+
+      if (exerciseError) {
+        // Clean up orphaned session
+        await supabase.from('workout_sessions').delete().eq('id', workoutSession.id);
+        throw exerciseError;
+      }
+
+      // Only save to localStorage after all DB operations succeed
+      const originalExercises: OriginalExerciseSnapshot[] = templateExerciseAndDefinition
+        .filter((ex) => ex.exercise_definitions?.id)
+        .map((ex) => ({
+          exerciseDefId: ex.exercise_definitions.id,
+          sets: ex.sets,
+          reps: ex.reps,
+          weight_type: ex.weight_type,
+        }));
+
+      const sessionStorage: WorkoutSessionStorage = {
+        sessionId: workoutSession.id,
+        templateId: id,
+        startTime: new Date().toISOString(),
+        status: 'in_progress',
+        originalExercises,
+      };
+      localStorage.setItem('current_workout_session', JSON.stringify(sessionStorage));
+
+      router.push(`/exercises/template/${id}?session=${workoutSession.id}`);
+    } catch {
+      setStartError('Failed to start workout. Please try again.');
+    }
+  };
 
   return (
-    <div className="">
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogTrigger asChild>
+    <>
+      <Drawer open={open} onOpenChange={setOpen}>
+        <DrawerTrigger asChild>
           <Button
-            className="h-10 w-25 bg-green-200 hover:bg-green-400 mr-6 dark:bg-green-800 dark:hover:bg-green-700"
+            className="h-10 w-25 mr-6 btn-success"
             variant="secondary"
             onClick={() => setOpen(true)}
           >
             <span className="font-bold">Preview</span>
             <Dumbbell />
           </Button>
-        </DialogTrigger>
-        <DialogContent className="p-0 border-none shadow-2xl shadow-white rounded-md max-w-[calc(100vw-2rem)] sm:max-w-2xl">
-          <DialogHeader className="flex flex-col gap-2 items-start p-4">
-            <DialogTitle>{title}</DialogTitle>
-            <DialogDescription>{notes}</DialogDescription>
-          </DialogHeader>
-          {templateExerciseAndDefinition?.map((exercise) => {
-            const { sets, reps, exercise_definitions } = exercise;
-            const { name, description } = exercise_definitions;
-            return (
-              <div className="flex flex-col px-4" key={exercise.id}>
-                <h1 className="font-bold">{name}</h1>
-                <p>{description}</p>
-                <p className="italic">
-                  {sets} sets of {reps} reps
-                </p>
+        </DrawerTrigger>
+        <DrawerContent className="max-h-[90vh] bg-background">
+          <DrawerHeader className="sr-only">
+            <DrawerTitle>{title}</DrawerTitle>
+            <DrawerDescription>Workout template preview</DrawerDescription>
+          </DrawerHeader>
+          <div className="overflow-y-auto">
+            {/* Header */}
+            <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b">
+              <div className="flex items-center justify-between p-4">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setOpen(false)}
+                  className="h-8 w-8"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+                <h2 className="text-xl font-semibold">{title}</h2>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-orange-500 hover:text-orange-600"
+                  onClick={() => {
+                    setOpen(false);
+                    setShowEditDialog(true);
+                  }}
+                >
+                  Edit
+                </Button>
               </div>
-            );
-          })}
-          <div className="flex justify-center px-4 mb-4">
-            <Button
-              className="w-full bg-green-200 hover:bg-green-400 mr-6 dark:bg-green-800 dark:hover:bg-green-700"
-              variant="secondary"
-              onClick={() => router.push(`/exercises/template/${id}`)}
-            >
-              <Play />
-            </Button>
+            </div>
+
+            {/* Content */}
+            <div className="p-4 space-y-6">
+              {/* Last performed info */}
+              {lastPerformed && (
+                <div className="text-sm text-muted-foreground">Last Performed: {lastPerformed}</div>
+              )}
+
+              {/* Quick summary */}
+              {notes && (
+                <div className="text-sm text-muted-foreground space-y-1">
+                  {String(notes)
+                    .split('\n')
+                    .map((line, idx) => (
+                      <p key={idx}>{line}</p>
+                    ))}
+                </div>
+              )}
+
+              {/* Exercises list */}
+              <div className="space-y-4">
+                {templateExerciseAndDefinition?.map((exercise) => {
+                  const { sets } = exercise;
+                  const exercise_definitions = exercise.exercise_definitions;
+
+                  // Skip exercises without definitions
+                  if (!exercise_definitions || !exercise_definitions.name) {
+                    console.warn('Exercise without definition found:', exercise);
+                    return null;
+                  }
+
+                  const { name } = exercise_definitions;
+                  const muscleGroup = getMuscleGroup(name);
+
+                  return (
+                    <div className="flex items-center gap-4 py-3" key={exercise.id}>
+                      {/* Exercise icon placeholder */}
+                      <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center flex-shrink-0">
+                        <Dumbbell className="h-6 w-6 text-muted-foreground" />
+                      </div>
+
+                      {/* Exercise info */}
+                      <div className="flex-1">
+                        <h3 className="font-medium">
+                          {sets} × {name}
+                        </h3>
+                        <p className="text-sm text-muted-foreground">{muscleGroup.group}</p>
+                      </div>
+
+                      {/* Help icon */}
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <HelpCircle className="h-5 w-5 text-orange-500" />
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Start workout button */}
+              {startError && (
+                <p className="text-sm text-destructive text-center">{startError}</p>
+              )}
+              <Button
+                className="w-full mt-4 btn-success"
+                variant="secondary"
+                onClick={handleStartWorkout}
+              >
+                <Play className="h-5 w-5" />
+              </Button>
+            </div>
           </div>
-        </DialogContent>
-      </Dialog>
-    </div>
+        </DrawerContent>
+      </Drawer>
+
+      <EditExerciseTemplateDialog
+        open={showEditDialog}
+        onOpenChange={setShowEditDialog}
+        templateId={id}
+        title={title}
+        notes={notes}
+        exercises={templateExerciseAndDefinition}
+        groupId={groupId}
+      />
+    </>
   );
 };

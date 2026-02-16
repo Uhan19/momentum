@@ -1,13 +1,15 @@
-import { Header } from './components/header/header';
-import { StartWorkout } from './components/workout/start-workout';
+'use client';
+
+import { ExerciseGroupsList } from '@/app/components/exercise-groups/exercise-groups-list';
+import { AuthenticatedLayout } from '@/app/components/layout/authenticated-layout';
 
 export default function Home() {
   return (
-    <div className="min-h-screen font-[family-name:var(--font-font-geist-sans)]">
-      <Header />
-      <main>
-        <StartWorkout />
-      </main>
-    </div>
+    <AuthenticatedLayout>
+      <div className="container mx-auto px-4 py-6">
+        <h1 className="text-3xl font-bold mb-6">Start a workout</h1>
+        <ExerciseGroupsList />
+      </div>
+    </AuthenticatedLayout>
   );
 }

@@ -9,10 +9,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { User } from 'lucide-react';
+import { User, Menu } from 'lucide-react';
 import { ModeToggle } from './mode-toggle';
 
-export function DashboardHeader() {
+export const DashboardHeader = ({ setIsOpen }: { setIsOpen: (isOpen: boolean) => void }) => {
   const { supabase } = useSupabase();
   const router = useRouter();
 
@@ -21,9 +21,16 @@ export function DashboardHeader() {
     router.push('/auth');
   };
 
+  const handleOpenSidebar = () => {
+    setIsOpen(true);
+  };
+
   return (
     <header className="border-b">
       <div className="flex h-16 items-center px-2">
+        <Button variant="ghost" onClick={handleOpenSidebar}>
+          <Menu className="h-4 w-4" />
+        </Button>
         <h2 className="text-2xl font-bold ml-4">Momentum</h2>
         <div className="ml-auto flex items-center">
           <ModeToggle />
@@ -43,4 +50,4 @@ export function DashboardHeader() {
       </div>
     </header>
   );
-}
+};

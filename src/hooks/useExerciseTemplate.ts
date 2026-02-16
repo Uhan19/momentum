@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase';
+import { useSupabase } from '@/providers/supabase-provider';
 
 export const useQueryExerciseTemplate = (selectedGroupId: string | null) => {
+  const { supabase } = useSupabase();
   const { data: exerciseTemplates } = useQuery({
     queryKey: ['exerciseTemplates', selectedGroupId],
     queryFn: async () => {
@@ -13,7 +14,7 @@ export const useQueryExerciseTemplate = (selectedGroupId: string | null) => {
         *,
         template_exercises (
           *,
-          exercise_definitions: exercise_definitions!exercise_id (*)
+          exercise_definitions!left (*)
         )
       `,
         )
